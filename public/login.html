@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Entrar — CarouselMed</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#0f0f13; --surface:#1a1a22; --surface2:#22222d; --border:#2e2e3d;
+    --accent:#6c63ff; --accent-hover:#7c74ff; --text:#f0f0f5; --text-muted:#888899;
+    --danger:#f4586b;
+  }
+  body{
+    font-family:'Inter',sans-serif; background:var(--bg); color:var(--text);
+    min-height:100dvh; display:grid; place-items:center; padding:24px;
+    position:relative; overflow:hidden;
+  }
+  /* brilho suave atrás do cartão, no tom do acento */
+  body::before{
+    content:''; position:fixed; inset:0; pointer-events:none;
+    background:
+      radial-gradient(680px 420px at 50% -10%, rgba(108,99,255,.20), transparent 70%),
+      radial-gradient(520px 360px at 85% 110%, rgba(108,99,255,.10), transparent 70%);
+  }
+  .card{
+    position:relative; width:100%; max-width:400px;
+    background:linear-gradient(180deg,var(--surface),#16161d);
+    border:1px solid var(--border); border-radius:18px;
+    padding:36px 32px 30px;
+    box-shadow:0 24px 60px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.02) inset;
+    animation:surge .5s cubic-bezier(.2,.8,.2,1) both;
+  }
+  @keyframes surge{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .brand{display:flex;align-items:center;gap:11px;margin-bottom:26px}
+  .brand-icon{
+    width:42px;height:42px;border-radius:12px;flex-shrink:0;
+    background:linear-gradient(135deg,var(--accent),#a78bfa);
+    display:grid;place-items:center;font-size:21px;
+    box-shadow:0 6px 18px rgba(108,99,255,.35);
+  }
+  .brand-text h1{font-size:19px;font-weight:700;letter-spacing:-.4px;line-height:1.15}
+  .brand-text p{font-size:12.5px;color:var(--text-muted);margin-top:1px}
+  .field{margin-bottom:15px}
+  label{display:block;font-size:11.5px;font-weight:600;text-transform:uppercase;
+        letter-spacing:.9px;color:var(--text-muted);margin-bottom:7px}
+  .wrap{position:relative;display:flex;align-items:center}
+  input{
+    width:100%;background:var(--surface2);border:1px solid var(--border);
+    border-radius:11px;padding:12px 14px;color:var(--text);
+    font-family:inherit;font-size:14.5px;transition:border-color .18s, box-shadow .18s;
+  }
+  input::placeholder{color:#5b5b6b}
+  input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(108,99,255,.16)}
+  .peek{
+    position:absolute;right:6px;background:none;border:none;cursor:pointer;
+    color:var(--text-muted);font-size:15px;padding:7px 9px;border-radius:8px;line-height:1;
+  }
+  .peek:hover{color:var(--text);background:rgba(255,255,255,.05)}
+  button.go{
+    width:100%;margin-top:9px;padding:12.5px;border:none;border-radius:11px;
+    background:var(--accent);color:#fff;font-family:inherit;font-size:14.5px;font-weight:600;
+    cursor:pointer;transition:background .18s,transform .06s;
+  }
+  button.go:hover:not(:disabled){background:var(--accent-hover)}
+  button.go:active:not(:disabled){transform:translateY(1px)}
+  button.go:disabled{opacity:.6;cursor:not-allowed}
+  .erro{
+    display:none;margin-top:14px;padding:10px 12px;border-radius:10px;font-size:13px;
+    background:rgba(244,88,107,.10);border:1px solid rgba(244,88,107,.32);color:#ffb3bd;
+  }
+  .erro.on{display:block}
+  .shake{animation:shake .4s}
+  @keyframes shake{
+    0%,100%{transform:translateX(0)} 20%{transform:translateX(-7px)}
+    40%{transform:translateX(7px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)}
+  }
+  .rodape{margin-top:22px;padding-top:16px;border-top:1px solid var(--border);
+          text-align:center;font-size:12px;color:var(--text-muted)}
+  @media (max-width:420px){ .card{padding:28px 22px 24px} }
+</style>
+</head>
+<body>
+  <main class="card" id="card">
+    <div class="brand">
+      <div class="brand-icon">🎠</div>
+      <div class="brand-text">
+        <h1>CarouselMed</h1>
+        <p>Carrosséis médicos para Instagram</p>
+      </div>
+    </div>
+
+    <form id="form" autocomplete="on">
+      <div class="field">
+        <label for="usuario">Usuário</label>
+        <div class="wrap">
+          <input id="usuario" name="username" type="text" placeholder="equipe"
+                 autocomplete="username" required autofocus />
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="senha">Senha</label>
+        <div class="wrap">
+          <input id="senha" name="password" type="password" placeholder="••••••••••••"
+                 autocomplete="current-password" required />
+          <button class="peek" type="button" id="peek" aria-label="Mostrar senha">👁</button>
+        </div>
+      </div>
+
+      <button class="go" type="submit" id="entrar">Entrar</button>
+      <p class="erro" id="erro"></p>
+    </form>
+
+    <p class="rodape">Acesso restrito à equipe</p>
+  </main>
+
+<script>
+  const form = document.getElementById('form');
+  const btn = document.getElementById('entrar');
+  const erro = document.getElementById('erro');
+  const card = document.getElementById('card');
+  const senha = document.getElementById('senha');
+
+  document.getElementById('peek').onclick = () => {
+    senha.type = senha.type === 'password' ? 'text' : 'password';
+    senha.focus();
+  };
+
+  function falhou(msg) {
+    erro.textContent = msg;
+    erro.classList.add('on');
+    card.classList.remove('shake');
+    void card.offsetWidth;          // reinicia a animação
+    card.classList.add('shake');
+    senha.select();
+  }
+
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    erro.classList.remove('on');
+    btn.disabled = true;
+    btn.textContent = 'Entrando…';
+    try {
+      const r = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: document.getElementById('usuario').value,
+          password: senha.value,
+        }),
+      });
+      if (r.ok) {
+        const proximo = new URLSearchParams(location.search).get('next') || '/';
+        location.href = proximo.startsWith('/') ? proximo : '/';
+        return;
+      }
+      const d = await r.json().catch(() => ({}));
+      falhou(d.error || 'Usuário ou senha incorretos.');
+    } catch {
+      falhou('Não deu para falar com o servidor. Tente de novo.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Entrar';
+    }
+  };
+</script>
+</body>
+</html>

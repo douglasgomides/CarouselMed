@@ -10,6 +10,7 @@ const { scanFonts, groupByFamily, FONT_DIRS } = require('./font-scanner');
 const { buildSystemPrompt, buildLevelSuggestionPrompt } = require('./skill-prompt');
 const SR = require('./public/shared-render');
 const store = require('./lib/storage');
+const sessao = require('./lib/sessao');
 
 // Safety net: never let a single bad request crash the whole server
 process.on('uncaughtException', (err) => console.error('⚠️ uncaughtException:', err.message));
@@ -23,6 +24,28 @@ const PORT = process.env.PORT || 3001;
 const { UPLOADS_DIR, OUTPUT_DIR, DATA_DIR } = store;
 
 app.use(express.json({ limit: '20mb' }));
+
+// ── Login ───────────────────────────────────────────────────────────
+// A tela é /login (public/login.html); o middleware da borda barra o resto
+// até existir um cookie de sessão válido.
+app.post('/api/login', (req, res) => {
+  const user = process.env.PANEL_USER;
+  const pass = process.env.PANEL_PASSWORD;
+  if (!user || !pass) {
+    return res.status(503).json({ error: 'Login não configurado no servidor.' });
+  }
+  const { username, password } = req.body || {};
+  if (!sessao.igual(String(username ?? ''), user) || !sessao.igual(String(password ?? ''), pass)) {
+    return res.status(401).json({ error: 'Usuário ou senha incorretos.' });
+  }
+  res.setHeader('Set-Cookie', sessao.criarCookie(user, pass));
+  res.json({ ok: true });
+});
+
+app.post('/api/logout', (req, res) => {
+  res.setHeader('Set-Cookie', sessao.cookieDeSaida());
+  res.json({ ok: true });
+});
 app.use(express.static(path.join(__dirname, 'public')));
 if (store.isRemote) {
   // Designs antigos guardam caminhos relativos ("/uploads/foto.jpg"); redireciona
