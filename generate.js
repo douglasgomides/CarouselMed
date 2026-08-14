@@ -123,11 +123,31 @@ async function _doExport(carousel, opts, onBrowser) {
     const slide = carousel.slides[i];
     const html = buildSlideHTML(slide, carousel, i + 1, carousel.slides.length, fontFaces);
 
-    // setContent em vez de arquivo em disco: as imagens de fundo agora são URLs
-    // https (Storage), então esperamos a rede sossegar antes do print.
-    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 20_000 });
-    await page.evaluateHandle('document.fonts.ready');
-    await new Promise(r => setTimeout(r, 250));
+    // setContent em vez de arquivo em disco. NÃO usamos 'networkidle0': o @import
+    // do Google Fonts mantém a rede ocupada e a espera nunca termina na Lambda.
+    // Em vez disso montamos o DOM e esperamos explicitamente o que precisa estar
+    // pronto pro print — fundos e fontes — com teto de tempo pra nunca travar.
+    await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 15_000 });
+    await page.evaluate(async (tetoMs) => {
+      const pronto = (async () => {
+        // toda imagem de fundo declarada em CSS (o fundo do slide vem por aqui)
+        const urls = new Set();
+        for (const el of document.querySelectorAll('*')) {
+          const bg = getComputedStyle(el).backgroundImage;
+          if (!bg || bg === 'none') continue;
+          for (const m of bg.matchAll(/url\(["']?(.*?)["']?\)/g)) urls.add(m[1]);
+        }
+        await Promise.all([...urls].map((u) => new Promise((res) => {
+          const img = new Image();
+          img.onload = img.onerror = () => res();
+          img.src = u;
+        })));
+        try { await document.fonts.ready; } catch {}
+      })();
+      // se algum recurso externo pendurar, imprime assim mesmo em vez de estourar
+      await Promise.race([pronto, new Promise((r) => setTimeout(r, tetoMs))]);
+    }, 8_000);
+    await new Promise(r => setTimeout(r, 200));
 
     const shotOpts = { type: format };
     if (format === 'jpeg') shotOpts.quality = 95;
