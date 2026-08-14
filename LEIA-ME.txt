@@ -1,0 +1,35 @@
+========================================
+  CarouselMed — Como rodar no seu PC
+========================================
+
+REQUISITOS:
+  - Node.js (versão 18 ou superior)
+    Baixe em: https://nodejs.org
+
+PASSO A PASSO:
+
+1. Extraia esta pasta para qualquer local do seu PC.
+
+2. Abra o terminal (Prompt de Comando ou PowerShell) na pasta extraída.
+
+3. Instale as dependências (só na primeira vez):
+     npm install
+
+4. Configure o arquivo .env na raiz da pasta com suas chaves:
+     GEMINI_API_KEY=sua_chave_aqui
+     CALENDAR_API_URL=url_do_calendario
+     CALENDAR_API_KEY=sua_chave_aqui
+     PORT=3001
+
+5. Rode a aplicação:
+     node server.js
+
+6. Acesse no navegador:
+     http://localhost:3001
+
+Pronto! A aplicação estará funcionando.
+
+========================================
+  Para parar: pressione Ctrl+C no terminal.
+  Para rodar novamente: repita os passos 5 e 6.
+========================================

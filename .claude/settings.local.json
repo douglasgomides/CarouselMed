@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(run)",
+      "Skill(run:*)",
+      "PowerShell(\\(Get-Command node -ErrorAction SilentlyContinue\\).Source)",
+      "PowerShell(Get-ChildItem \"C:\\\\Program Files\\\\\" -Directory | Select-Object Name | Where-Object {$_.Name -match \"node|npm\"}; Get-ChildItem \"C:\\\\Program Files \\(x86\\)\\\\\" -Directory | Where-Object {$_.Name -match \"node|npm\"} | Select-Object Name)",
+      "PowerShell($env:PATH -split \";\" | Where-Object {$_ -match \"node|nvm|volta\"})",
+      "PowerShell(Get-ChildItem \"$env:APPDATA\\\\npm\" -ErrorAction SilentlyContinue | Select-Object -First 5 Name; Get-ChildItem \"$env:LOCALAPPDATA\\\\Programs\" -Directory -ErrorAction SilentlyContinue | Where-Object {$_.Name -match \"node|nvm|volta\"} | Select-Object Name)",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\thale\" -Directory | Select-Object Name | Where-Object {$_.Name -match \"node|nvm|volta|fnm\"})",
+      "PowerShell(Get-ChildItem \"C:\\\\\" -Directory | Select-Object Name | Where-Object {$_.Name -match \"node|nvm|volta\"})",
+      "Bash(ls /c/Users/thale/AppData/Roaming/ 2>/dev/null | grep -i \"node\\\\|nvm\\\\|volta\\\\|npm\" ; ls /c/Users/thale/.nvm 2>/dev/null | head -5)",
+      "PowerShell(Get-Process | Where-Object {$_.Name -match \"node\"} | Select-Object Name, Path | Format-List)",
+      "PowerShell(where.exe node 2>$null; \\(Get-Command node -ErrorAction SilentlyContinue\\).Source)",
+      "PowerShell(curl.exe -s -w \"`nHTTP_STATUS:%{http_code}\" -H \"x-api-key: cal_live_7Kq3Xm9Zt2Rv8Wp5Nb1Ld6Yc0Hj4Ea3Fs\" \"https://calendario.doctorcreator.com.br/api/public/calendar\")",
+      "PowerShell(curl.exe -s -w \"`nHTTP_STATUS:%{http_code}\" -H \"x-api-key: apikey91736314978\" \"https://calendario.doctorcreator.com.br/api/public/calendar\")",
+      "PowerShell(curl.exe -s -H \"x-api-key: apikey91736314978\" \"https://calendario.doctorcreator.com.br/api/public/calendar\")",
+      "PowerShell(python -c \"import sys,json; d=json.load\\(sys.stdin\\); items=[c for c in d.get\\('calendar',[]\\) if c.get\\('type'\\)=='carrossel']; print\\(json.dumps\\(items[0] if items else {}, indent=2, ensure_ascii=False\\)\\)\")",
+      "PowerShell($r = curl.exe -s -H \"x-api-key: apikey91736314978\" \"https://calendario.doctorcreator.com.br/api/public/calendar\"; $d = $r | ConvertFrom-Json; $items = $d.calendar | Where-Object {$_.type -eq \"carrossel\"}; $items[0] | ConvertTo-Json -Depth 10)",
+      "PowerShell($r = curl.exe -s -H \"x-api-key: apikey91736314978\" \"https://calendario.doctorcreator.com.br/api/public/calendar\"; $d = $r | ConvertFrom-Json; $items = $d.calendar | Where-Object {$_.type -eq \"carrossel\"}; $withCover = $items | Where-Object {$_.cover_url -ne $null}; Write-Output \"Total carrosséis: $\\($items.Count\\)\"; Write-Output \"Com cover_url: $\\($withCover.Count\\)\"; if \\($withCover.Count -gt 0\\) { $withCover[0] | ConvertTo-Json -Depth 5 })",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri \"http://localhost:3001\" -TimeoutSec 5 -UseBasicParsing; \"STATUS: $\\($r.StatusCode\\)\" } catch { \"ERRO: $_\" })",
+      "PowerShell(netstat -ano)",
+      "PowerShell(Start-Process \"http://localhost:3001\")",
+      "PowerShell(Start-Process -FilePath \"cmd.exe\" -ArgumentList \"/c `\"C:\\\\Users\\\\thale\\\\Documents\\\\Claude Code\\\\Carross�is\\\\CarouselMed\\\\start.bat`\"\" -WorkingDirectory \"C:\\\\Users\\\\thale\\\\Documents\\\\Claude Code\\\\Carross�is\\\\CarouselMed\")",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;$env:PATH\"; cd \"C:\\\\Users\\\\thale\\\\Documents\\\\Claude Code\\\\Carrosséis\\\\CarouselMed\"; node server.js 2>&1 | Tee-Object -FilePath \"C:\\\\Users\\\\thale\\\\AppData\\\\Local\\\\Temp\\\\carouselmed.log\")",
+      "PowerShell(Start-Process -FilePath \"cmd.exe\" -ArgumentList \"/k `\"cd /d `\"C:\\\\Users\\\\thale\\\\Documents\\\\Claude Code\\\\Carross�is\\\\CarouselMed`\" && node server.js`\"\" -WindowStyle Normal)",
+      "PowerShell(Start-Process -FilePath \"cmd.exe\" -ArgumentList \"/k `\"cd /d `\"C:\\\\Users\\\\thale\\\\Documents\\\\Claude Code\\\\Carross?is\\\\CarouselMed`\" && node server.js`\"\" -WindowStyle Normal)",
+      "PowerShell(Start-Process -FilePath \"cmd.exe\" -ArgumentList \"/k node server.js\" -WorkingDirectory $dir -WindowStyle Normal)",
+      "PowerShell($dir = \"C:\\\\Users\\\\thale\\\\Documents\\\\Claude Code\\\\Carross`u00e9is\\\\CarouselMed\")",
+      "PowerShell($dir = \"C:\\\\Users\\\\thale\\\\Documents\\\\Claude Code\\\\Carross\" + [char]0xe9 + \"is\\\\CarouselMed\")",
+      "Bash(node -e \"require\\('@anthropic-ai/sdk'\\); console.log\\('ok'\\)\")",
+      "Bash(node -e \"console.log\\(process.env.ANTHROPIC_API_KEY ? 'key found: ' + process.env.ANTHROPIC_API_KEY.slice\\(0,8\\) + '...' : 'not set'\\)\")",
+      "Bash(node -e \"require\\('dotenv'\\).config\\({path:'.env'}\\); console.log\\(process.env.ANTHROPIC_API_KEY ? 'key: ' + process.env.ANTHROPIC_API_KEY.slice\\(0,12\\) + '...' : 'not set'\\)\")",
+      "Bash(read dir *)",
+      "Read(//c/Users/thale/Documents/Claude Code/Carrosséis/CarouselMed/output\\\\$dir/**)",
+      "Bash(grep -o \"sr-box\\\\|sr-title\\\\|sr-sub\\\\|background:#[0-9a-f]\\\\{3,6\\\\}\\\\|background:linear\\\\|medico\\\\|tela\" \"C:\\\\Users\\\\thale\\\\Documents\\\\Claude Code\\\\Carrosséis\\\\CarouselMed\\\\output\\\\cal_1785962579151\\\\slide1.html\")",
+      "Bash(python -c \"import json; d=json.load\\(open\\('C:/Users/thale/Documents/Claude Code/Carrosséis/CarouselMed/designs/_drafts.json','r',encoding='utf-8'\\)\\); print\\('folders:', len\\(d.get\\('folders',[]\\)\\), [f.get\\('name'\\) for f in d.get\\('folders',[]\\)]\\); print\\('carousels:', len\\(d.get\\('carousels',[]\\)\\), [c.get\\('folderId','---'\\) for c in d.get\\('carousels',[]\\)]\\)\")"
+    ]
+  }
+}

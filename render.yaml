@@ -1,0 +1,15 @@
+# Blueprint de deploy no Render (https://render.com)
+# Plano FREE para começar sem cartão. Para dados permanentes, troque para
+# plan: starter e adicione o bloco "disk" (veja DEPLOY.md).
+services:
+  - type: web
+    name: carouselmed
+    runtime: docker
+    region: oregon
+    plan: free
+    healthCheckPath: /
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false            # você cola a chave no painel do Render
+      - key: POLLINATIONS_TOKEN
+        sync: false            # opcional (imagens grátis)

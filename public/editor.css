@@ -1,0 +1,286 @@
+/* ===================== EDITOR OVERLAY ===================== */
+.editor-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: #0d0d12;
+  display: flex;
+  flex-direction: column;
+}
+
+/* TOOLBAR */
+.editor-toolbar {
+  height: 52px;
+  background: #1a1a22;
+  border-bottom: 1px solid #2e2e3d;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 4px;
+  flex-shrink: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.editor-toolbar::-webkit-scrollbar { height: 3px; }
+.editor-toolbar::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
+
+.tb-group { display: flex; align-items: center; gap: 3px; }
+.tb-sep { width: 1px; height: 28px; background: #2e2e3d; margin: 0 6px; flex-shrink: 0; }
+.tb-spacer { flex: 1; }
+
+.tb-btn {
+  height: 32px;
+  min-width: 32px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #ccc;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+  font-family: inherit;
+}
+.tb-btn:hover { background: #2a2a36; color: #fff; }
+.tb-btn.active { background: #6c63ff33; color: #6c63ff; border-color: #6c63ff55; }
+.tb-btn.tb-danger:hover { background: #ff444433; color: #ff6666; }
+.tb-btn.tb-add { background: #6c63ff22; color: #9b93ff; border-color: #6c63ff44; }
+.tb-btn.tb-add:hover { background: #6c63ff44; color: #fff; }
+
+.tb-select {
+  height: 32px;
+  min-width: 160px;
+  max-width: 220px;
+  background: #22222d;
+  border: 1px solid #2e2e3d;
+  border-radius: 6px;
+  color: #ccc;
+  font-size: 13px;
+  padding: 0 8px;
+  cursor: pointer;
+  outline: none;
+  font-family: inherit;
+}
+.tb-select:focus { border-color: #6c63ff; }
+.tb-select option, .tb-select optgroup { background: #22222d; color: #eee; }
+
+.tb-size-row { display: flex; align-items: center; gap: 2px; }
+.tb-size {
+  width: 52px;
+  height: 32px;
+  background: #22222d;
+  border: 1px solid #2e2e3d;
+  border-radius: 6px;
+  color: #ccc;
+  font-size: 13px;
+  text-align: center;
+  outline: none;
+  font-family: inherit;
+}
+.tb-size:focus { border-color: #6c63ff; }
+
+.tb-color-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+}
+.tb-color-wrap input[type="color"] {
+  width: 28px;
+  height: 20px;
+  border: 1px solid #2e2e3d;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 1px;
+  background: #22222d;
+}
+.tb-color-label { font-size: 9px; color: #888; line-height: 1; }
+
+.tb-hint { font-size: 12px; color: #888; white-space: nowrap; padding: 0 6px; }
+
+.tb-cancel {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 6px;
+  border: 1px solid #2e2e3d;
+  background: transparent;
+  color: #aaa;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.tb-cancel:hover { background: #2a2a36; color: #fff; }
+
+.tb-save {
+  height: 32px;
+  padding: 0 16px;
+  border-radius: 6px;
+  border: none;
+  background: #6c63ff;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.tb-save:hover { background: #7c74ff; }
+
+/* BODY */
+.editor-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 20px;
+  gap: 10px;
+}
+
+.editor-hint {
+  font-size: 12px;
+  color: #555;
+  text-align: center;
+}
+
+/* CANVAS WRAPPER — scales 1080×1350 to fit display */
+.editor-canvas-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  width: 100%;
+}
+
+.editor-canvas {
+  position: relative;
+  background: #1a1a2e;
+  overflow: hidden;
+  /* width/height set by JS based on viewport */
+  flex-shrink: 0;
+  cursor: default;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+  border-radius: 8px;
+}
+
+.editor-canvas .ed-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  pointer-events: none;
+}
+
+.editor-canvas .ed-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 35%, rgba(0,0,0,0.15) 100%);
+  pointer-events: none;
+}
+
+/* TEXT ELEMENTS */
+.ed-el {
+  position: absolute;
+  cursor: move;
+  user-select: none;
+  box-sizing: border-box;
+  min-width: 40px;
+  min-height: 20px;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  transition: border-color 0.1s;
+}
+.ed-el:hover { border-color: rgba(108,99,255,0.4); }
+.ed-el.selected {
+  border-color: #6c63ff !important;
+  box-shadow: 0 0 0 1px #6c63ff44;
+}
+.ed-el.editing { cursor: text; }
+
+.ed-el-inner {
+  box-sizing: border-box;
+  outline: none;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.32;
+}
+
+/* Resize handle (bottom-right) */
+.ed-resize {
+  position: absolute;
+  bottom: -6px;
+  right: -6px;
+  width: 14px;
+  height: 14px;
+  background: #6c63ff;
+  border: 2px solid #fff;
+  border-radius: 3px;
+  cursor: se-resize;
+  display: none;
+  z-index: 10;
+}
+.ed-el.selected .ed-resize { display: block; }
+
+/* Accent line element */
+.ed-accent {
+  position: absolute;
+  height: 5px;
+  border-radius: 3px;
+  cursor: move;
+  border: 2px solid transparent;
+}
+.ed-accent:hover, .ed-accent.selected { border-color: #6c63ff; }
+
+/* Thumbnail strip in modal */
+.thumb-strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 10px 2px;
+  flex-shrink: 0;
+  justify-content: flex-start;
+  scroll-behavior: smooth;
+}
+/* center thumbs when they fit, scroll when they overflow */
+.thumb-strip { justify-content: safe center; }
+.thumb-strip::-webkit-scrollbar { height: 6px; }
+.thumb-strip::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+.thumb-strip::-webkit-scrollbar-thumb:hover { background: #6c63ff; }
+.thumb-item {
+  width: 64px;
+  height: 80px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  cursor: pointer;
+  border: 2px solid transparent;
+  overflow: hidden;
+  transition: border-color 0.15s;
+  position: relative;
+  background: #22222d;
+}
+.thumb-item.active { border-color: #6c63ff; }
+.thumb-item:hover { border-color: #6c63ff88; }
+.thumb-mini-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+}
+.thumb-mini-card {
+  position: absolute;
+  left: 4px; right: 4px; bottom: 6px;
+  padding: 4px 5px;
+  border-radius: 3px;
+  font-size: 5px;
+  line-height: 1.3;
+  font-weight: 700;
+}

@@ -1,0 +1,10 @@
+*.rar
+.env
+.env.*
+Dockerfile
+designs
+node_modules
+output
+render.yaml
+start.bat
+uploads

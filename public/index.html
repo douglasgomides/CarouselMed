@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CarouselMed — Gerador de Carrosséis Médicos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Montserrat:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700;1,800;1,900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet" />
+  <style id="localFontFaces"></style>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="editor.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="logo">
+        <span class="logo-icon">⚕</span>
+        <span class="logo-text">CarouselMed</span>
+      </div>
+
+      <!-- MODO -->
+      <section class="panel">
+        <h3>Modo</h3>
+        <div class="mode-toggle">
+          <button class="mode-btn active" data-mode="ai" onclick="setMode('ai')">🤖 Gerar com IA</button>
+          <button class="mode-btn" data-mode="paste" onclick="setMode('paste')">📋 Colar texto</button>
+        </div>
+      </section>
+
+      <!-- NÍVEL DE FUNIL -->
+      <section class="panel" id="levelPanel">
+        <h3>Nível de funil <span class="info-dot" title="C0: sem consciência · C1: percebeu a dor (educar) · C2: busca solução (converter) · C3: decisão final (oferta)">ⓘ</span></h3>
+        <div class="level-grid">
+          <button class="level-btn" data-level="auto" onclick="setLevel('auto')">Auto</button>
+          <button class="level-btn" data-level="C0" onclick="setLevel('C0')">C0</button>
+          <button class="level-btn active" data-level="C1" onclick="setLevel('C1')">C1</button>
+          <button class="level-btn" data-level="C2" onclick="setLevel('C2')">C2</button>
+          <button class="level-btn" data-level="C3" onclick="setLevel('C3')">C3</button>
+        </div>
+        <p class="hint" id="levelHint">C1 — Percebeu a dor. CTA de salvar/comentar.</p>
+      </section>
+
+      <!-- BIO -->
+      <section class="panel">
+        <h3 class="collapsible" onclick="toggleBio()">Bio do médico <span id="bioChevron">▸</span></h3>
+        <div id="bioWrap" style="display:none">
+          <textarea id="bioInput" class="bio-input" rows="4"
+            placeholder="Ex: Dra. Débora Moura, ginecologista, perimenopausa e menopausa, mulheres 40+, Picos/Teresina, @dra.deboramoura"></textarea>
+          <p class="hint">Opcional. Personaliza tom e CTA.</p>
+        </div>
+      </section>
+
+      <!-- TEMPLATE -->
+      <section class="panel">
+        <h3>Template</h3>
+        <div class="style-grid">
+          <label class="style-option active" data-style="medico" onclick="setStyle('medico')">
+            <div class="style-preview style-medico"></div>
+            <span>Médico</span>
+          </label>
+          <label class="style-option" data-style="tweet_com_imagem" onclick="setStyle('tweet_com_imagem')">
+            <div class="style-preview" style="background:linear-gradient(to bottom,#c8b8a2 42%,#f5f0ea 42%)"></div>
+            <span>Tweet c/ Imagem</span>
+          </label>
+          <label class="style-option" data-style="texto_img_escura" onclick="setStyle('texto_img_escura')">
+            <div class="style-preview" style="background:linear-gradient(to bottom,rgba(0,0,0,0.3) 0%,rgba(0,0,0,0.82) 100%),#555"></div>
+            <span>Texto + Img Escura</span>
+          </label>
+          <label class="style-option" data-style="tela_dividida" onclick="setStyle('tela_dividida')">
+            <div class="style-preview" style="background:linear-gradient(to bottom,#f4f4f4 44%,#9abedc 44%)"></div>
+            <span>Tela Dividida</span>
+          </label>
+        </div>
+        <div id="customTemplateCards" class="style-grid" style="margin-top:6px;display:none;"></div>
+      </section>
+
+      <!-- GALERIA DE IMAGENS -->
+      <section class="panel">
+        <h3>Galeria de imagens</h3>
+        <button class="gallery-add-btn" onclick="document.getElementById('photoInput').click()">
+          ＋ Adicionar imagens
+        </button>
+        <input type="file" id="photoInput" accept="image/*" multiple
+          style="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;" />
+        <div class="gallery-drawer" id="galleryDrawer">
+          <p class="gallery-empty" id="galleryEmpty">Nenhuma imagem ainda.<br/>Use como fundo dos slides.</p>
+        </div>
+        <p class="hint">Clique numa imagem para aplicar ao slide aberto. Duplo clique aplica a todos.</p>
+      </section>
+
+      <!-- QUANTIDADE -->
+      <section class="panel" id="qtyPanel">
+        <h3>Quantos carrosséis?</h3>
+        <div class="qty-row">
+          <button class="qty-btn" onclick="changeQty(-1)">−</button>
+          <span id="qtyDisplay">1</span>
+          <button class="qty-btn" onclick="changeQty(1)">+</button>
+        </div>
+        <p class="hint">Gera variações diferentes do mesmo tema</p>
+      </section>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+      <!-- NOTIFICATION BELL (always visible) -->
+      <div class="notif-bar">
+        <button class="notif-bell" id="notifBell" onclick="toggleNotifPanel()" title="Conteúdos em produção">
+          🔔 <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+        </button>
+        <div class="notif-tabs">
+          <button class="notif-tab active" id="tabMain" onclick="setMainTab('main')">Carrosséis</button>
+          <button class="notif-tab" id="tabDashboard" onclick="setMainTab('dashboard')">📊 Dashboard</button>
+        </div>
+      </div>
+
+      <!-- NOTIFICATION PANEL (slide-down, YouTube style) -->
+      <div id="notifPanel" class="notif-panel" style="display:none">
+        <div class="notif-header">
+          <h3>📋 Em produção</h3>
+          <button class="modal-close" onclick="toggleNotifPanel()">✕</button>
+        </div>
+        <div class="notif-filters">
+          <div class="notif-search">
+            <span class="notif-search-icon">🔍</span>
+            <input type="text" id="notifSearch" class="notif-search-input" placeholder="Buscar palavra-chave..." oninput="renderNotifList()" />
+          </div>
+          <select id="notifDoctor" class="notif-filter-select" onchange="renderNotifList()">
+            <option value="">Todos os médicos</option>
+          </select>
+          <select id="notifStatus" class="notif-filter-select" onchange="renderNotifList()">
+            <option value="">Todos os status</option>
+            <option value="rascunho">Rascunho</option>
+            <option value="roteiro">Roteiro</option>
+            <option value="gravacao">Gravação</option>
+            <option value="producao">Produção</option>
+            <option value="edicao">Edição</option>
+            <option value="aprovacao">Em aprovação</option>
+            <option value="alteracao">Alteração</option>
+            <option value="aprovado">Aprovado</option>
+            <option value="agendado">Agendado</option>
+            <option value="publicado">Publicado</option>
+            <option value="cancelado">Cancelado</option>
+          </select>
+          <input type="date" id="notifDateFrom" class="notif-filter-date" title="A partir de" onchange="renderNotifList()" />
+          <input type="date" id="notifDateTo" class="notif-filter-date" title="Até" onchange="renderNotifList()" />
+        </div>
+        <div id="notifList" class="notif-list"></div>
+      </div>
+
+      <!-- DASHBOARD (per-doctor stats) -->
+      <div id="dashboardView" class="dashboard-view" style="display:none">
+        <div class="dash-filters">
+          <select id="dashStatus" class="notif-filter-select" onchange="renderDashboard()">
+            <option value="">Todos os status</option>
+            <option value="rascunho">Rascunho</option>
+            <option value="roteiro">Roteiro</option>
+            <option value="gravacao">Gravação</option>
+            <option value="producao">Produção</option>
+            <option value="edicao">Edição</option>
+            <option value="aprovacao">Em aprovação</option>
+            <option value="alteracao">Alteração</option>
+            <option value="aprovado">Aprovado</option>
+            <option value="agendado">Agendado</option>
+            <option value="publicado">Publicado</option>
+            <option value="cancelado">Cancelado</option>
+          </select>
+          <select id="dashDoctor" class="notif-filter-select" onchange="renderDashboard()">
+            <option value="">Todos os médicos</option>
+          </select>
+        </div>
+        <div id="dashboardContent" class="dashboard-content"></div>
+      </div>
+
+      <!-- AI MODE -->
+      <div class="topbar" id="topbarAI">
+        <div class="topic-row">
+          <input type="text" id="topicInput" class="topic-input"
+            placeholder="Ex: Intestino e testosterona, Menopausa e sono, Tireoide e cansaço..." />
+          <button class="btn-generate" id="btnGenerate" onclick="generate()">
+            <span id="btnText">Gerar Carrosséis</span>
+            <span id="btnLoader" style="display:none">Gerando...</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- PASTE MODE -->
+      <div class="topbar" id="topbarPaste" style="display:none">
+        <div class="paste-header">
+          <div class="paste-tabs">
+            <button class="paste-tab active" id="tabNotes" onclick="setPasteView('notes')">📝 Notas <span id="notesCount">(1)</span></button>
+            <button class="paste-tab" id="tabResults" onclick="setPasteView('results')">🎴 Resultados <span id="resultsCount">(0)</span></button>
+          </div>
+          <button class="btn-generate btn-calendar" onclick="openCalendarImport()">📅 Importar do Calendário</button>
+          <button class="btn-generate" onclick="createBatch()">✨ Criar carrosséis em lote</button>
+        </div>
+      </div>
+
+      <!-- NOTES WORKSPACE -->
+      <div id="notesWorkspace" class="notes-workspace" style="display:none">
+        <div id="notesGrid" class="notes-grid"></div>
+      </div>
+
+      <!-- FOLDER BAR (doctor folders) -->
+      <div id="folderBar" class="folder-bar" style="display:none"></div>
+
+      <div id="emptyState" class="empty-state">
+        <div class="empty-icon">🎯</div>
+        <h2>Pronto para criar</h2>
+        <p id="emptyText">Digite um tema médico e clique em Gerar.<br/>Os carrosséis aparecem aqui para revisar, editar e exportar.</p>
+      </div>
+
+      <div id="carouselGrid" class="carousel-grid" style="display:none"></div>
+    </main>
+  </div>
+
+  <!-- MODAL DE SLIDE PREVIEW + EDIÇÃO LATERAL -->
+  <div id="slideModal" class="modal" style="display:none">
+    <div class="modal-overlay" onclick="closeModal()"></div>
+    <div class="modal-content modal-wide">
+      <div class="modal-header">
+        <h2 id="modalTitle">Preview</h2>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body modal-body-split">
+        <!-- LEFT: preview -->
+        <div class="modal-left">
+          <div class="slide-viewer">
+            <button class="nav-btn" id="prevBtn" onclick="navSlide(-1)">‹</button>
+            <div class="slide-preview-area">
+              <div id="slidePreview" class="slide-card-preview"></div>
+            </div>
+            <button class="nav-btn" id="nextBtn" onclick="navSlide(1)">›</button>
+          </div>
+          <div class="slide-counter-modal" id="slideCounterModal">1 / 7</div>
+          <div class="thumb-strip" id="thumbStrip"></div>
+        </div>
+
+        <!-- RIGHT: side editing panel -->
+        <div class="modal-right">
+          <div class="side-section">
+            <h4>🎨 Template</h4>
+            <div id="modalStyleGrid" class="modal-style-grid"></div>
+          </div>
+
+          <div class="side-section">
+            <h4>📝 Caixas de texto</h4>
+            <div id="blocksEditor"></div>
+            <button class="btn-sm" style="width:100%" onclick="addBlock()">＋ Adicionar caixa de texto</button>
+            <p class="hint">Dê <b>Enter duas vezes</b> para dividir em duas caixas. Use ✕ para remover. <b>Arraste as caixas no preview</b> para mover livremente.</p>
+          </div>
+
+          <div class="side-section">
+            <h4>📐 Tamanho e espaçamento</h4>
+            <label class="side-label">Tamanho do título <span class="side-val" id="valTitleSize"></span></label>
+            <input type="range" id="rngTitleSize" min="28" max="150" oninput="sideSize('title', +this.value)" />
+            <label class="side-label">Tamanho do conteúdo <span class="side-val" id="valSubSize"></span></label>
+            <input type="range" id="rngSubSize" min="18" max="90" oninput="sideSize('subtitle', +this.value)" />
+            <label class="side-label">Posição vertical</label>
+            <input type="range" id="rngOffsetY" min="-350" max="350" value="0" oninput="sideOffsetY(+this.value)" />
+            <label class="side-label">Espaço título ↔ conteúdo</label>
+            <input type="range" id="rngGap" min="-100" max="250" value="0" oninput="sideGap(+this.value)" />
+            <label class="side-label">Entrelinhas da caixa <span class="side-val" id="valLineH">1.3</span></label>
+            <input type="range" id="rngLineH" min="70" max="250" value="130" oninput="sideLineHeight(+this.value)" />
+          </div>
+
+          <div class="side-section">
+            <h4>🔤 Fonte</h4>
+            <div class="font-picker">
+              <input type="text" id="fontSearch" class="font-search-input" placeholder="Buscar fonte..." oninput="filterFontList()" />
+              <div id="fontList" class="font-list"></div>
+              <div class="font-actions">
+                <button class="btn-sm" onclick="document.getElementById('fontUploadInput').click()">📁 Adicionar do PC</button>
+                <input type="file" id="fontUploadInput" accept=".ttf,.otf,.woff,.woff2" multiple style="display:none" onchange="uploadCustomFonts(this.files)" />
+                <button class="btn-sm" style="flex:1" onclick="sideFontToAll()">Aplicar fonte a todos os slides</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="side-section">
+            <h4>🎨 Cores das caixas</h4>
+            <p class="color-scope" id="colorScopeLabel"></p>
+            <div class="preset-row">
+              <button class="preset-chip" title="Caixa branca, texto escuro" onclick="sidePreset('white')">
+                <span class="chip-swatch" style="background:#fff;color:#111">Aa</span>Branca
+              </button>
+              <button class="preset-chip" title="Caixa preta, texto branco" onclick="sidePreset('black')">
+                <span class="chip-swatch" style="background:#111;color:#fff">Aa</span>Preta
+              </button>
+              <button class="preset-chip" title="Caixa colorida (azul)" onclick="sidePreset('accent')">
+                <span class="chip-swatch" style="background:#2563eb;color:#fff">Aa</span>Azul
+              </button>
+            </div>
+            <div class="preset-row">
+              <button class="preset-chip" title="Caixa creme, texto marrom" onclick="sidePreset('cream')">
+                <span class="chip-swatch" style="background:#f8f5f2;color:#5a3e30">Aa</span>Creme
+              </button>
+              <button class="preset-chip" title="Vermelho impacto" onclick="sidePreset('red')">
+                <span class="chip-swatch" style="background:#FF0000;color:#fff">Aa</span>Vermelho
+              </button>
+              <button class="preset-chip" title="Sem caixa (texto puro)" onclick="sidePreset('none')">
+                <span class="chip-swatch" style="background:transparent;color:#888;border:1px dashed #666">Aa</span>Sem
+              </button>
+            </div>
+            <div class="color-row">
+              <div class="color-field">
+                <input type="color" id="sideTextColor" value="#111111" onchange="sideTextColor(this.value)" />
+                <span>Texto</span>
+              </div>
+              <div class="color-field">
+                <input type="color" id="sideBoxColor" value="#ffffff" onchange="sideBoxColor(this.value)" />
+                <span>Caixa</span>
+              </div>
+              <div class="color-field grow">
+                <label class="side-label">Opacidade da caixa <span class="side-val" id="valBoxOp"></span></label>
+                <input type="range" id="sideBoxOp" min="0" max="100" value="100" oninput="sideBoxOpacity(+this.value)" />
+              </div>
+            </div>
+            <label class="side-check"><input type="checkbox" id="sideShadow" onchange="sideShadow(this.checked)" /> Sombra na caixa</label>
+            <label class="side-check"><input type="checkbox" id="sideTextShadow" onchange="sideTextShadowToggle(this.checked)" /> Sombra atrás da letra</label>
+            <div id="textShadowControls" class="text-shadow-controls" style="display:none">
+              <div class="color-row">
+                <div class="color-field">
+                  <input type="color" id="sideTextShadowColor" value="#000000" onchange="sideTextShadowProp()" />
+                  <span>Cor</span>
+                </div>
+                <div class="color-field grow">
+                  <label class="side-label">Opacidade <span class="side-val" id="valTxtShOp">100%</span></label>
+                  <input type="range" id="rngTxtShOp" min="0" max="100" value="100" oninput="sideTextShadowProp()" />
+                </div>
+              </div>
+              <label class="side-label">Indefinição (blur) <span class="side-val" id="valTxtShBlur">8px</span></label>
+              <input type="range" id="rngTxtShBlur" min="0" max="50" value="8" oninput="sideTextShadowProp()" />
+              <label class="side-label">Distância <span class="side-val" id="valTxtShDist">2px</span></label>
+              <input type="range" id="rngTxtShDist" min="0" max="30" value="2" oninput="sideTextShadowProp()" />
+              <label class="side-label">Ângulo <span class="side-val" id="valTxtShAngle">135°</span></label>
+              <input type="range" id="rngTxtShAngle" min="0" max="360" value="135" oninput="sideTextShadowProp()" />
+            </div>
+            <button class="btn-sm" style="width:100%" onclick="sideColorsToAll()">Aplicar cores a todos os slides</button>
+            <div id="folderPresetBar" class="folder-preset-bar" style="display:none">
+              <div id="folderPresetPreview" class="folder-preset-preview"></div>
+              <div class="folder-preset-actions">
+                <button class="btn-sm preset-save" onclick="saveFolderPreset()">💾 Salvar preset</button>
+                <button class="btn-sm preset-load" id="btnLoadPreset" onclick="loadFolderPreset()" style="display:none">🎨 Aplicar</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="side-section">
+            <h4>🖼 Imagem deste slide</h4>
+            <div id="sideImgPreview" class="side-img-preview" ondblclick="sideUploadForSlide()" title="Clique 2x para escolher imagem do computador"></div>
+            <div class="side-img-actions">
+              <button class="btn-sm" onclick="sideUploadForSlide()">＋ Enviar</button>
+              <button class="btn-sm" onclick="sideRemoveImg()">Remover</button>
+              <button class="btn-sm" onclick="sideApplyImgAll()">Todos</button>
+            </div>
+
+            <div id="imgAdjust" class="img-adjust" style="display:none">
+              <label class="side-label">🔍 Zoom <span class="side-val" id="valImgZoom">1.0x</span></label>
+              <input type="range" id="rngImgZoom" min="100" max="300" value="100" oninput="sideImgZoom(+this.value)" />
+              <label class="side-label">↔ Posição horizontal</label>
+              <input type="range" id="rngImgX" min="-50" max="50" value="0" oninput="sideImgPos('x', +this.value)" />
+              <label class="side-label">↕ Posição vertical</label>
+              <input type="range" id="rngImgY" min="-50" max="50" value="0" oninput="sideImgPos('y', +this.value)" />
+              <button class="btn-sm" style="width:100%;margin-top:6px" onclick="sideImgReset()">↺ Resetar imagem</button>
+            </div>
+
+            <div id="sideGallery" class="side-gallery"></div>
+            <button class="btn-sm" style="width:100%;margin-bottom:4px" onclick="quickGenerateSlideImage()">⚡ Gerar imagem do slide (1 clique)</button>
+            <button class="btn-sm ai-open-btn" style="width:100%" onclick="openAiImage()">🍌 Gerar imagem com IA (avançado)</button>
+          </div>
+
+          <button class="btn-secondary side-adv" onclick="openEditor()">✏️ Editor avançado (mover boxes, fontes, cores)</button>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="copySlideTexts()">📋 Copiar</button>
+        <button class="btn-secondary" onclick="saveDraft()">💾 Rascunho</button>
+        <button class="btn-secondary" onclick="shareDesign()">🔗 Compartilhar</button>
+        <select id="exportFormat" class="format-select" title="Formato de exportação">
+          <option value="png">PNG</option>
+          <option value="jpg">JPG</option>
+        </select>
+        <button class="btn-primary" onclick="exportCurrentCarousel()">
+          <span id="exportBtnText">⬇ Exportar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROGRESS OVERLAY -->
+  <div id="progressOverlay" class="progress-overlay" style="display:none">
+    <div class="progress-box">
+      <div class="progress-ring">
+        <svg viewBox="0 0 120 120">
+          <circle class="ring-bg" cx="60" cy="60" r="52"></circle>
+          <circle class="ring-fill" id="ringFill" cx="60" cy="60" r="52"></circle>
+        </svg>
+        <div class="progress-pct" id="progressPct">0%</div>
+      </div>
+      <div class="progress-label" id="progressLabel">Processando...</div>
+    </div>
+  </div>
+
+  <!-- AI IMAGE GENERATOR -->
+  <div id="aiImageDialog" class="ai-dialog" style="display:none">
+    <div class="ai-overlay" onclick="closeAiImage()"></div>
+    <div class="ai-box">
+      <div class="ai-head">
+        <h3>🍌 Gerar imagens com IA</h3>
+        <button class="modal-close" onclick="closeAiImage()">✕</button>
+      </div>
+      <div class="ai-body">
+        <label class="ai-label">Provedor</label>
+        <div class="ai-provider">
+          <button class="ai-prov active" data-prov="free" onclick="setAiProvider('free')">🆓 Free <small>Pollinations</small></button>
+          <button class="ai-prov" data-prov="pro" onclick="setAiProvider('pro')">🍌 Pro <small>Nano Banana</small></button>
+        </div>
+
+        <div id="aiFreeToken">
+          <label class="ai-label">Token grátis <a href="https://enter.pollinations.ai" target="_blank">obter token grátis →</a></label>
+          <input id="aiToken" class="ai-input" placeholder="Cole aqui o token grátis (login Google, 1 min)" oninput="saveAiToken()" />
+        </div>
+        <div id="aiProNote" class="ai-note" style="display:none">Usa sua chave Gemini. Precisa de faturamento ativado em aistudio.google.com.</div>
+
+        <label class="ai-label">Quais páginas? <small>(ex: 2-5, 7)</small></label>
+        <input id="aiPages" class="ai-input" placeholder="2-5, 7" oninput="renderAiPerPage()" />
+
+        <label class="ai-label">Prompt — descreva a imagem</label>
+        <textarea id="aiPrompt" class="ai-input" rows="3" placeholder="Ex: consultório médico moderno, luz natural suave, fundo desfocado, fotografia profissional"></textarea>
+
+        <label class="ai-check"><input type="checkbox" id="aiUseContext" checked /> Usar o texto de cada página como contexto da imagem</label>
+        <label class="ai-check"><input type="checkbox" id="aiPerPage" onchange="renderAiPerPage()" /> Personalizar o prompt por página</label>
+        <div id="aiPerPageList"></div>
+      </div>
+      <div class="ai-foot">
+        <button class="btn-secondary" onclick="closeAiImage()">Cancelar</button>
+        <button class="btn-primary" onclick="generateAiImages()">✨ Gerar imagens</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDITOR FULLSCREEN -->
+  <div id="editorOverlay" class="editor-overlay" style="display:none">
+    <div class="editor-toolbar">
+      <div class="tb-group">
+        <button class="tb-btn" id="undoBtn" onclick="editorUndo()" title="Desfazer (Ctrl+Z)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 2.23-5.94"/></svg>
+        </button>
+        <button class="tb-btn" id="redoBtn" onclick="editorRedo()" title="Refazer (Ctrl+Y)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"/><path d="M21 13a9 9 0 1 1-2.23-5.94"/></svg>
+        </button>
+      </div>
+      <div class="tb-sep"></div>
+      <div class="tb-group" id="textProps">
+        <select class="tb-select" id="propFont" onchange="applyProp('fontFamily', this.value)">
+          <option value="Inter, sans-serif">Inter</option>
+        </select>
+        <div class="tb-size-row">
+          <button class="tb-btn" onclick="nudgeFontSize(-2)">−</button>
+          <input type="number" class="tb-size" id="propSize" value="64" min="8" max="300"
+            onchange="applyProp('fontSize', +this.value)" />
+          <button class="tb-btn" onclick="nudgeFontSize(2)">+</button>
+        </div>
+        <div class="tb-sep"></div>
+        <div class="tb-color-wrap" title="Cor do texto">
+          <input type="color" id="propColor" value="#111111" onchange="applyProp('color', this.value)" />
+          <span class="tb-color-label">Cor</span>
+        </div>
+        <div class="tb-color-wrap" title="Cor do fundo da caixa">
+          <input type="color" id="propBgColor" value="#ffffff" onchange="applyProp('bgColor', this.value)" />
+          <span class="tb-color-label">Fundo</span>
+        </div>
+        <input type="range" id="propOpacity" min="0" max="100" value="0"
+          title="Opacidade do fundo" onchange="applyProp('bgOpacity', +this.value)" style="width:70px" />
+        <div class="tb-sep"></div>
+        <button class="tb-btn" id="btnBold" onclick="toggleProp('bold')" title="Negrito (Ctrl+B)"><b>B</b></button>
+        <button class="tb-btn" id="btnItalic" onclick="toggleProp('italic')" title="Itálico (Ctrl+I)"><i>I</i></button>
+        <div class="tb-sep"></div>
+        <button class="tb-btn" onclick="applyProp('align','left')" title="Esquerda">⯇</button>
+        <button class="tb-btn" onclick="applyProp('align','center')" title="Centro">≡</button>
+        <button class="tb-btn" onclick="applyProp('align','right')" title="Direita">⯈</button>
+        <div class="tb-sep"></div>
+        <button class="tb-btn tb-danger" onclick="deleteSelected()" title="Apagar (Delete)">🗑</button>
+      </div>
+      <div class="tb-sep"></div>
+      <div class="tb-group">
+        <button class="tb-btn tb-add" onclick="addTextEl()" title="Adicionar caixa de texto">＋ Texto</button>
+      </div>
+      <div class="tb-spacer"></div>
+      <div class="tb-group">
+        <span class="tb-hint" id="editorSlideLabel">Slide 1/7</span>
+        <button class="tb-btn" onclick="editorNavSlide(-1)">‹</button>
+        <button class="tb-btn" onclick="editorNavSlide(1)">›</button>
+      </div>
+      <div class="tb-sep"></div>
+      <div class="tb-group">
+        <button class="tb-cancel" onclick="cancelEditor()">Cancelar</button>
+        <button class="tb-save" onclick="saveEditor()">Salvar Alterações</button>
+      </div>
+    </div>
+    <div class="editor-body">
+      <div class="editor-canvas-wrapper">
+        <div class="editor-canvas" id="editorCanvas"
+          onmousedown="canvasMouseDown(event)" onclick="canvasClick(event)"></div>
+      </div>
+      <p class="editor-hint">Clique para selecionar · Arraste para mover · Duplo clique para editar · Delete para apagar</p>
+    </div>
+  </div>
+
+  <!-- CALENDAR IMPORT DIALOG -->
+  <div id="calendarDialog" class="ai-dialog" style="display:none">
+    <div class="ai-overlay" onclick="closeCalendarImport()"></div>
+    <div class="ai-box" style="max-width:560px">
+      <div class="ai-head">
+        <h3>📅 Importar do Calendário</h3>
+        <button class="modal-close" onclick="closeCalendarImport()">✕</button>
+      </div>
+      <div class="ai-body">
+        <label class="ai-label">Médico(a)</label>
+        <select id="calDoctor" class="ai-input" onchange="calDoctorChanged()">
+          <option value="">Carregando...</option>
+        </select>
+
+        <label class="ai-label">Período</label>
+        <div style="display:flex;gap:8px">
+          <input type="date" id="calFrom" class="ai-input" />
+          <input type="date" id="calTo" class="ai-input" />
+        </div>
+
+        <div id="calPreview" class="cal-preview" style="margin-top:12px"></div>
+      </div>
+      <div class="ai-foot">
+        <button class="btn-secondary" onclick="closeCalendarImport()">Cancelar</button>
+        <button class="btn-primary" id="calImportBtn" onclick="doCalendarImport()" disabled>📥 Importar carrosséis</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="shared-render.js"></script>
+  <script src="app.js"></script>
+  <script src="editor.js"></script>
+</body>
+</html>

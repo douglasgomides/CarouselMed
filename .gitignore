@@ -1,0 +1,10 @@
+node_modules/
+.env
+output/
+uploads/
+designs/
+backups/
+*.log
+.DS_Store
+cloudflared.exe
+iniciar.bat
