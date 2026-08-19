@@ -8,3 +8,5 @@ backups/
 .DS_Store
 cloudflared.exe
 iniciar.bat
+
+.env.vercel
