@@ -189,20 +189,56 @@ function setStyle(s) {
 }
 
 // ── Custom Templates ─────────────────────────────────────────────────
-function loadCustomTemplates() {
-  try {
-    const raw = localStorage.getItem(CUSTOM_TMPL_KEY);
-    if (raw) _customTemplates = JSON.parse(raw) || [];
-  } catch { _customTemplates = []; }
+// Vivem no servidor (Storage), não mais só neste navegador: template criado
+// por uma pessoa aparece para o time inteiro. O localStorage continua como
+// cache, para o app abrir com os estilos certos mesmo se a rede falhar.
+const CUSTOM_TMPL_MIGRADO = 'carouselmed_tmpl_migrado';
+
+function templatesDoCache() {
+  try { return JSON.parse(localStorage.getItem(CUSTOM_TMPL_KEY) || '[]') || []; }
+  catch { return []; }
+}
+
+function aplicarTemplates(lista) {
+  _customTemplates = Array.isArray(lista) ? lista : [];
   _customTemplates.forEach(t => {
     SharedRender.FMT[t.id] = t.fmt;
     if (t.fmtCapa) SharedRender.FMT[t.id + '_capa'] = t.fmtCapa;
   });
+  saveCustomTemplates();
   renderCustomTemplateCards();
 }
 
+async function loadCustomTemplates() {
+  let doServidor = null;
+  try {
+    const r = await fetch('/api/templates');
+    if (r.ok) doServidor = (await r.json()).templates || [];
+  } catch { /* sem rede: cai no cache abaixo */ }
+
+  if (doServidor === null) { aplicarTemplates(templatesDoCache()); return; }
+
+  // Uma vez só: sobe os templates que já existiam neste navegador.
+  if (!localStorage.getItem(CUSTOM_TMPL_MIGRADO)) {
+    const novos = templatesDoCache().filter(l => !doServidor.some(x => x.id === l.id));
+    for (const t of novos) {
+      try {
+        const r = await fetch('/api/templates', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(t),
+        });
+        if (r.ok) doServidor = (await r.json()).templates || doServidor;
+      } catch { /* segue com o que já veio do servidor */ }
+    }
+    localStorage.setItem(CUSTOM_TMPL_MIGRADO, '1');
+    if (novos.length) console.log(`[templates] ${novos.length} deste navegador foram para o time.`);
+  }
+  aplicarTemplates(doServidor);
+}
+
+// Só cache local. A fonte da verdade é o servidor.
 function saveCustomTemplates() {
-  localStorage.setItem(CUSTOM_TMPL_KEY, JSON.stringify(_customTemplates));
+  try { localStorage.setItem(CUSTOM_TMPL_KEY, JSON.stringify(_customTemplates)); } catch {}
 }
 
 function renderCustomTemplateCards() {
@@ -217,16 +253,68 @@ function renderCustomTemplateCards() {
   container.style.display = _customTemplates.length ? 'grid' : 'none';
 }
 
-function deleteCustomTemplate(id) {
-  _customTemplates = _customTemplates.filter(t => t.id !== id);
-  delete SharedRender.FMT[id];
-  delete SharedRender.FMT[id + '_capa'];
-  saveCustomTemplates();
-  renderCustomTemplateCards();
-  if (currentStyle === id) setStyle('medico');
+async function deleteCustomTemplate(id) {
+  if (!confirm('Excluir este template para o time inteiro?')) return;
+  try {
+    const r = await fetch('/api/templates/' + encodeURIComponent(id), { method: 'DELETE' });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || 'falhou');
+    delete SharedRender.FMT[id];
+    delete SharedRender.FMT[id + '_capa'];
+    aplicarTemplates(j.templates || []);
+    if (currentStyle === id) setStyle('medico');
+  } catch (e) {
+    alert('Não deu para excluir: ' + e.message);
+  }
 }
 
-// ── Template creation dialog — removed (templates added by code) ──────
+// ── Novo template a partir de uma imagem de referência ────────────────
+// Manda a referência para /api/analyze-template (Claude lê o estilo) e salva
+// o resultado no servidor, já disponível para todo mundo.
+async function novoTemplateDeImagem(input) {
+  const file = input.files && input.files[0];
+  input.value = '';
+  if (!file) return;
+  const nome = (prompt('Nome do template (o time inteiro vai ver):') || '').trim();
+  if (!nome) return;
+
+  const btn = document.getElementById('btnNovoTemplate');
+  const rotulo = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Analisando referência…'; }
+  try {
+    const base64 = await new Promise((ok, erro) => {
+      const fr = new FileReader();
+      fr.onload = () => ok(String(fr.result).split(',')[1]);
+      fr.onerror = () => erro(new Error('não consegui ler o arquivo'));
+      fr.readAsDataURL(file);
+    });
+
+    const a = await fetch('/api/analyze-template', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageBase64: base64, mimeType: file.type }),
+    });
+    const aj = await a.json().catch(() => ({}));
+    if (!a.ok || !aj.fmt) throw new Error(aj.error || 'não consegui ler a referência');
+
+    const id = 'tmpl_' + Date.now().toString(36);
+    const s = await fetch('/api/templates', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id, name: nome, fmt: aj.fmt,
+        previewGradient: aj.fmt.bgGradient || aj.fmt.bgColor || '#666',
+      }),
+    });
+    const sj = await s.json().catch(() => ({}));
+    if (!s.ok) throw new Error(sj.error || 'não consegui salvar');
+
+    aplicarTemplates(sj.templates || []);
+    setStyle(id);
+  } catch (e) {
+    alert('Não deu para criar o template: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = rotulo; }
+  }
+}
 
 // ── Bio ─────────────────────────────────────────────────────────────
 function toggleBio() {

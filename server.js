@@ -29,17 +29,20 @@ app.use(express.json({ limit: '20mb' }));
 // A tela é /login (public/login.html); o middleware da borda barra o resto
 // até existir um cookie de sessão válido.
 app.post('/api/login', (req, res) => {
-  const user = process.env.PANEL_USER;
-  const pass = process.env.PANEL_PASSWORD;
-  if (!user || !pass) {
+  const contas = sessao.lerUsuarios();
+  if (!contas.length) {
     return res.status(503).json({ error: 'Login não configurado no servidor.' });
   }
   const { username, password } = req.body || {};
-  if (!sessao.igual(String(username ?? ''), user) || !sessao.igual(String(password ?? ''), pass)) {
+  const conta = contas.find(
+    (c) => sessao.igual(String(username ?? ''), c.usuario) &&
+           sessao.igual(String(password ?? ''), c.senha)
+  );
+  if (!conta) {
     return res.status(401).json({ error: 'Usuário ou senha incorretos.' });
   }
-  res.setHeader('Set-Cookie', sessao.criarCookie(user, pass));
-  res.json({ ok: true });
+  res.setHeader('Set-Cookie', sessao.criarCookie(conta.usuario, sessao.segredo(contas)));
+  res.json({ ok: true, usuario: conta.usuario });
 });
 
 app.post('/api/logout', (req, res) => {
@@ -309,6 +312,63 @@ app.get('/api/drafts', async (req, res) => {
 });
 
 // ── Image gallery: upload multiple ──────────────────────────────────
+// ── Templates compartilhados ──────────────────────────────────────────
+// Ficam num JSON no mesmo Storage do resto. Antes disto cada template vivia
+// só no localStorage de quem criou, então ninguém mais no time enxergava.
+const TEMPLATES_KEY = 'templates.json';
+
+async function lerTemplates() {
+  return (await store.getJSON(TEMPLATES_KEY)) || [];
+}
+
+app.get('/api/templates', async (req, res) => {
+  try {
+    res.json({ templates: await lerTemplates() });
+  } catch (err) {
+    console.error('templates:get:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/templates', async (req, res) => {
+  try {
+    const { id, name, fmt, fmtCapa, previewGradient } = req.body || {};
+    if (!id || !name || !fmt) {
+      return res.status(400).json({ error: 'id, name e fmt são obrigatórios.' });
+    }
+    const lista = await lerTemplates();
+    const i = lista.findIndex((t) => t.id === id);
+    const item = {
+      id, name, fmt,
+      fmtCapa: fmtCapa || null,
+      previewGradient: previewGradient || null,
+      atualizadoEm: new Date().toISOString(),
+    };
+    if (i >= 0) lista[i] = { ...lista[i], ...item };
+    else lista.push({ ...item, criadoEm: item.atualizadoEm });
+    await store.putJSON(TEMPLATES_KEY, lista);
+    res.json({ ok: true, templates: lista });
+  } catch (err) {
+    console.error('templates:post:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/templates/:id', async (req, res) => {
+  try {
+    const lista = await lerTemplates();
+    const restante = lista.filter((t) => t.id !== req.params.id);
+    if (restante.length === lista.length) {
+      return res.status(404).json({ error: 'Template não encontrado.' });
+    }
+    await store.putJSON(TEMPLATES_KEY, restante);
+    res.json({ ok: true, templates: restante });
+  } catch (err) {
+    console.error('templates:delete:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/upload-photo', upload.array('photos', 30), async (req, res) => {
   try {
     const files = [];

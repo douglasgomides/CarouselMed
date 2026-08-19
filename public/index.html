@@ -74,6 +74,10 @@
           </label>
         </div>
         <div id="customTemplateCards" class="style-grid" style="margin-top:6px;display:none;"></div>
+        <input type="file" id="fileNovoTemplate" accept="image/*" style="display:none"
+               onchange="novoTemplateDeImagem(this)">
+        <button type="button" id="btnNovoTemplate" class="btn-secondary" style="margin-top:8px;width:100%"
+                onclick="document.getElementById('fileNovoTemplate').click()">+ Novo template de uma referência</button>
       </section>
 
       <!-- GALERIA DE IMAGENS -->
