@@ -248,7 +248,26 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 20px;
   align-content: start;
+  /* Sem isto o grid usa "stretch" e todo card da linha estica ate a altura do
+     mais alto. Com poucos carrosseis ninguem nota; com dezenas, um card longo
+     deixa os vizinhos gigantes e vazios, e a lista vira faixas em branco. */
+  align-items: start;
 }
+
+/* Previa curta: a lista serve para escanear, o conteudo inteiro abre no clique.
+   Mantem os cards com alturas parecidas mesmo quando os textos variam muito. */
+.card-slides {
+  max-height: 232px;
+  overflow: hidden;
+  position: relative;
+}
+.card-slides::after {
+  content: '';
+  position: absolute; left: 0; right: 0; bottom: 0; height: 34px;
+  background: linear-gradient(to bottom, transparent, var(--surface));
+  pointer-events: none;
+}
+.carousel-card.collapsed .card-slides::after { display: none; }
 
 .carousel-card {
   background: var(--surface);
