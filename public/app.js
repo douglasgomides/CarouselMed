@@ -272,26 +272,32 @@ async function deleteCustomTemplate(id) {
 // Manda a referência para /api/analyze-template (Claude lê o estilo) e salva
 // o resultado no servidor, já disponível para todo mundo.
 async function novoTemplateDeImagem(input) {
-  const file = input.files && input.files[0];
+  const files = [...(input.files || [])].slice(0, 4);
   input.value = '';
-  if (!file) return;
-  const nome = (prompt('Nome do template (o time inteiro vai ver):') || '').trim();
+  if (!files.length) return;
+  const nome = (prompt(
+    files.length > 1
+      ? `Nome do template (${files.length} telas: a 1a e a capa):`
+      : 'Nome do template (o time inteiro vai ver):'
+  ) || '').trim();
   if (!nome) return;
 
   const btn = document.getElementById('btnNovoTemplate');
   const rotulo = btn ? btn.textContent : '';
   if (btn) { btn.disabled = true; btn.textContent = 'Analisando referência…'; }
   try {
-    const base64 = await new Promise((ok, erro) => {
+    const lerBase64 = (file) => new Promise((ok, erro) => {
       const fr = new FileReader();
-      fr.onload = () => ok(String(fr.result).split(',')[1]);
-      fr.onerror = () => erro(new Error('não consegui ler o arquivo'));
+      fr.onload = () => ok({ imageBase64: String(fr.result).split(',')[1], mimeType: file.type });
+      fr.onerror = () => erro(new Error('não consegui ler ' + file.name));
       fr.readAsDataURL(file);
     });
+    const imagens = [];
+    for (const f of files) imagens.push(await lerBase64(f));
 
     const a = await fetch('/api/analyze-template', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageBase64: base64, mimeType: file.type }),
+      body: JSON.stringify({ imagens }),
     });
     const aj = await a.json().catch(() => ({}));
     if (!a.ok || !aj.fmt) throw new Error(aj.error || 'não consegui ler a referência');
@@ -300,8 +306,8 @@ async function novoTemplateDeImagem(input) {
     const s = await fetch('/api/templates', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        id, name: nome, fmt: aj.fmt,
-        previewGradient: aj.fmt.bgGradient || aj.fmt.bgColor || '#666',
+        id, name: nome, fmt: aj.fmt, fmtCapa: aj.fmtCapa || null,
+        previewGradient: (aj.fmtCapa || aj.fmt).bgGradient || (aj.fmtCapa || aj.fmt).bgColor || '#666',
       }),
     });
     const sj = await s.json().catch(() => ({}));
@@ -309,6 +315,7 @@ async function novoTemplateDeImagem(input) {
 
     aplicarTemplates(sj.templates || []);
     setStyle(id);
+    if (aj.fmtCapa) console.log('[templates] capa e miolo distintos gravados');
   } catch (e) {
     alert('Não deu para criar o template: ' + e.message);
   } finally {

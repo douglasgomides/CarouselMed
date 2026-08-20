@@ -489,10 +489,49 @@ app.get('/api/calendar/summary', async (req, res) => {
   }
 });
 
+// Preenche o que faltou e aplica as regras de coerencia de cada tipo de fundo.
+// Vale para a capa e para o miolo, por isso virou funcao.
+function normalizarFmt(fmt) {
+  const defaults = SR.FMT.medico;
+  const required = ['titleSize','subSize','titleColor','subColor','box','boxOp','shadow','align','justify','gap','font','padX','padTop','padBottom'];
+  for (const k of required) {
+    if (fmt[k] === undefined || fmt[k] === null) fmt[k] = defaults[k];
+  }
+  // Medidas precisam ser positivas. Quando a referencia tem pouco texto o
+  // modelo as vezes devolve 0, e um titulo de 0px simplesmente nao aparece.
+  for (const k of ['titleSize','subSize','gap','padX','padTop','padBottom']) {
+    if (!(Number(fmt[k]) > 0)) fmt[k] = defaults[k];
+  }
+  if (fmt.bgSplitRatio !== null && fmt.bgSplitRatio !== undefined
+      && !(Number(fmt.bgSplitRatio) > 0 && Number(fmt.bgSplitRatio) < 1)) {
+    fmt.bgSplitRatio = 0.45;
+  }
+  if (fmt.bgType === 'image') { fmt.bgColor = null; fmt.bgGradient = null; fmt.bgSplitRatio = null; }
+  if (fmt.bgType === 'split') { fmt.bgGradient = null; }
+  if (fmt.bgType === 'solid' || fmt.bgType === 'gradient') { fmt.bgSplitRatio = null; }
+  if (fmt.bgType === 'split') {
+    const ratio = fmt.bgSplitRatio || 0.45;
+    const minPadTop = Math.round(1350 * ratio) + 40;
+    if (!fmt.padTop || fmt.padTop < minPadTop) fmt.padTop = minPadTop;
+    fmt.boxOp = 0; // no split o texto fica sempre direto sobre a area solida
+  }
+  if (fmt.bgType === 'image' && fmt.boxOp === 0 && !fmt.textShadow) {
+    fmt.textShadow = { x: 0, y: 2, blur: 8, color: 'rgba(0,0,0,0.7)' };
+  }
+  return fmt;
+}
+
 // ── Analyze reference image → extract template style with Claude Vision ─
 app.post('/api/analyze-template', async (req, res) => {
+  // Aceita uma imagem (formato antigo) ou varias telas do mesmo carrossel.
   const { imageBase64, mimeType } = req.body;
-  if (!imageBase64 || !mimeType) return res.status(400).json({ error: 'imageBase64 e mimeType obrigatórios' });
+  const enviadas = Array.isArray(req.body.imagens) && req.body.imagens.length
+    ? req.body.imagens
+    : (imageBase64 && mimeType ? [{ imageBase64, mimeType }] : []);
+  const telas = enviadas.filter((i) => i && i.imageBase64 && i.mimeType).slice(0, 4);
+  if (!telas.length) {
+    return res.status(400).json({ error: 'Envie ao menos uma imagem: imagens[] ou imageBase64 + mimeType.' });
+  }
 
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   if (!anthropicKey || anthropicKey === 'cole-sua-chave-aqui') {
@@ -541,40 +580,43 @@ REGRAS CRÍTICAS:
 - Texto direto no fundo SEM retângulo próprio → boxOp=0
 - Para "split": padTop deve refletir onde o texto começa (abaixo da foto), padBottom deve ter margem suficiente para créditos`;
 
+  const varias = telas.length > 1;
+  const instrucao = varias ? `
+
+SAO ${telas.length} TELAS DO MESMO CARROSSEL, na ordem em que aparecem.
+A PRIMEIRA e a capa. As demais sao o miolo.
+Capa e miolo quase sempre tem layouts diferentes: a capa costuma ter titulo
+maior, foto de fundo, ou o texto em outra posicao.
+Descreva os dois e devolva APENAS este JSON, sem markdown:
+
+{"capa": { ...os campos acima... }, "miolo": { ...os campos acima... }}
+
+O "miolo" deve descrever o PADRAO COMUM das telas internas, nao uma delas em
+particular. Se todas as telas tiverem o mesmo layout, repita o mesmo objeto.` : '';
+
   try {
     const client = new Anthropic({ apiKey: anthropicKey });
+    const conteudo = telas.map((t) => ({
+      type: 'image', source: { type: 'base64', media_type: t.mimeType, data: t.imageBase64 },
+    }));
+    conteudo.push({ type: 'text', text: prompt + instrucao });
+
     const response = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'image', source: { type: 'base64', media_type: mimeType, data: imageBase64 } },
-          { type: 'text', text: prompt }
-        ]
-      }]
+      max_tokens: varias ? 2048 : 1024,
+      messages: [{ role: 'user', content: conteudo }],
     });
-    const fmt = extractJSON(response.content[0].text);
-    const defaults = SR.FMT.medico;
-    const required = ['titleSize','subSize','titleColor','subColor','box','boxOp','shadow','align','justify','gap','font','padX','padTop','padBottom'];
-    for (const k of required) {
-      if (fmt[k] === undefined || fmt[k] === null) fmt[k] = defaults[k];
+    const bruto = extractJSON(response.content[0].text);
+
+    if (varias && (bruto.capa || bruto.miolo)) {
+      const fmt = normalizarFmt(bruto.miolo || bruto.capa);
+      const fmtCapa = normalizarFmt(bruto.capa || bruto.miolo);
+      console.log(`🎨 Template de ${telas.length} telas: capa bgType=${fmtCapa.bgType}, miolo bgType=${fmt.bgType}`);
+      return res.json({ fmt, fmtCapa });
     }
-    if (fmt.bgType === 'image') { fmt.bgColor = null; fmt.bgGradient = null; fmt.bgSplitRatio = null; }
-    if (fmt.bgType === 'split') { fmt.bgGradient = null; }
-    if (fmt.bgType === 'solid' || fmt.bgType === 'gradient') { fmt.bgSplitRatio = null; }
-    // For split layout: ensure padTop pushes text below the photo area
-    if (fmt.bgType === 'split') {
-      const ratio = fmt.bgSplitRatio || 0.45;
-      const minPadTop = Math.round(1350 * ratio) + 40;
-      if (!fmt.padTop || fmt.padTop < minPadTop) fmt.padTop = minPadTop;
-      fmt.boxOp = 0; // text is always directly on solid area in split layout
-    }
-    // For full photo backgrounds with no box, add text shadow for legibility
-    if (fmt.bgType === 'image' && fmt.boxOp === 0 && !fmt.textShadow) {
-      fmt.textShadow = { x: 0, y: 2, blur: 8, color: 'rgba(0,0,0,0.7)' };
-    }
-    console.log(`🎨 Template analisado: bgType=${fmt.bgType}, boxOp=${fmt.boxOp}, align=${fmt.align}, justify=${fmt.justify}`);
+
+    const fmt = normalizarFmt(bruto);
+    console.log(`🎨 Template analisado: bgType=${fmt.bgType}, boxOp=${fmt.boxOp}, align=${fmt.align}`);
     res.json({ fmt });
   } catch (err) {
     console.error('analyze-template:', err.message);
