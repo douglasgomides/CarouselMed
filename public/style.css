@@ -869,7 +869,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
   font-size: 10px; cursor: pointer; opacity: 0; transition: opacity 0.15s;
   display: flex; align-items: center; justify-content: center; line-height: 1;
 }
-.gallery-thumb:hover .thumb-del, .side-gal-thumb:hover .thumb-del { opacity: 1; }
+.gallery-thumb:hover .thumb-del, .side-gal-thumb:hover .thumb-del, .thumb-item:hover .thumb-del { opacity: 1; }
 .thumb-del:hover { background: #ff4444; }
 .thumb-del.small { width: 15px; height: 15px; font-size: 9px; }
 

@@ -1025,6 +1025,7 @@ function renderThumbStrip(rebuildIdx = null, forceAll = false) {
     strip.innerHTML = activeCarousel.slides.map((s, i) => `
       <div class="thumb-item" onclick="jumpToSlide(${i})">
         <div class="thumb-stage">${slideStageHTML(activeCarousel, i)}</div>
+        <button class="thumb-del" onclick="deleteSlide(${i},event)" title="Excluir slide">✕</button>
       </div>`).join('');
   } else if (rebuildIdx != null) {
     const items = strip.querySelectorAll('.thumb-item');
@@ -1195,6 +1196,51 @@ function syncSidePanel() {
 
   renderSideImage();
   syncFolderPresetBar();
+
+  // Background color picker (solid-bg and blur-top templates)
+  const templateFmt = SharedRender.FMT[activeCarousel.style] || {};
+  const bgColorRow = document.getElementById('bgColorRow');
+  if (bgColorRow) {
+    const hasBgColor = (templateFmt.bgType === 'solid' || templateFmt.bgType === 'blur-top') && !templateFmt.altColors;
+    bgColorRow.style.display = hasBgColor ? '' : 'none';
+    if (hasBgColor) {
+      const bgVal = templateFmt.bgType === 'blur-top'
+        ? rgbToHexJS(activeCarousel.bgColor || templateFmt.bgColor || '#0a2358')
+        : rgbToHexJS((slide.fmt && slide.fmt.bgColor) || templateFmt.bgColor || '#04284e');
+      document.getElementById('sideBgColor').value = bgVal;
+    }
+  }
+
+  // Doctor name field (tweet template) — auto-populate from folder name if empty
+  const tweetDoctorRow = document.getElementById('tweetDoctorRow');
+  if (tweetDoctorRow) {
+    const isTweet = activeCarousel.style === 'tweet';
+    tweetDoctorRow.style.display = isTweet ? '' : 'none';
+    if (isTweet) {
+      if (activeCarousel.folderId) {
+        const fn = folderName(activeCarousel.folderId);
+        if (fn) {
+          const cur = activeCarousel.doctorName || '';
+          // Set or fix: empty OR saved without "Dr." prefix (old auto-populate)
+          if (!cur || cur === fn) {
+            activeCarousel.doctorName = 'Dr. ' + fn;
+            persistDrafts();
+          }
+        }
+      }
+      document.getElementById('tweetDoctorInput').value = activeCarousel.doctorName || '';
+    }
+  }
+  // Handle/profile name field (tweet_erica template)
+  const tweetHandleRow = document.getElementById('tweetHandleRow');
+  if (tweetHandleRow) {
+    const isErica = activeCarousel.style === 'tweet_erica';
+    tweetHandleRow.style.display = isErica ? '' : 'none';
+    if (isErica) {
+      document.getElementById('tweetHandleInput').value = activeCarousel.tweetHandle || '';
+    }
+  }
+
 }
 
 function deselectBox() { _pvSelIdx = null; renderSlidePreview(); syncSidePanel(); }
@@ -2638,3 +2684,47 @@ function doCalendarImport() {
   renderFolders();
   loadCalendarSummary();
 })();
+
+// ── Estilos Tweet e Tweet Érica (trazidos do pacote do Alex, 14/09/2026) ──
+// Nome do médico e @perfil viram crédito no rodapé dos slides internos; a cor
+// de fundo é do carrossel em template com blur no topo (tela_dividida) e do
+// slide nos de fundo sólido. deleteSlide veio junto no mesmo pacote.
+function tweetDoctorNameChange(val) {
+  if (!activeCarousel) return;
+  activeCarousel.doctorName = val;
+  renderSlidePreview(); renderThumbStrip(activeSlideIndex);
+  persistDrafts();
+}
+
+function tweetHandleChange(val) {
+  if (!activeCarousel) return;
+  activeCarousel.tweetHandle = val;
+  renderSlidePreview(); renderThumbStrip(null, true);
+  persistDrafts();
+}
+
+function sideBgColorChange(hex) {
+  const tFmt = SharedRender.FMT[activeCarousel.style] || {};
+  if (tFmt.bgType === 'blur-top') {
+    // Carousel-level color for tela_dividida (applies to all slides)
+    activeCarousel.bgColor = hex;
+    renderThumbStrip(null, true);
+  } else {
+    ensureFmt(curSlide()).bgColor = hex;
+    renderThumbStrip(activeSlideIndex);
+  }
+  renderSlidePreview();
+  persistDrafts();
+}
+
+function deleteSlide(i, event) {
+  event.stopPropagation();
+  if (!activeCarousel || activeCarousel.slides.length <= 1) return;
+  activeCarousel.slides.splice(i, 1);
+  if (activeSlideIndex >= activeCarousel.slides.length) activeSlideIndex = activeCarousel.slides.length - 1;
+  clearPreviewSelection();
+  renderSlidePreview();
+  renderThumbStrip(null, true);
+  syncSidePanel();
+  persistDrafts();
+}

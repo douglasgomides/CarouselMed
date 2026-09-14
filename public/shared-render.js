@@ -28,6 +28,13 @@
     tweet_com_imagem_capa: { titleSize:70, subSize:50, titleColor:'#ffffff', subColor:'#f0f0f0', box:'#ffffff', boxOp:0, shadow:false, align:'left', justify:'flex-end',   gap:12, font:"Georgia, serif", padX:72, padTop:80,  padBottom:110, bgType:'image', bgOverlay:'linear-gradient(to bottom,rgba(255,255,255,0.42) 0%,rgba(255,255,255,0) 16%,transparent 45%,rgba(0,0,0,0.62) 82%,rgba(0,0,0,0.78) 100%)', textShadow:{x:0,y:2,blur:14,color:'rgba(0,0,0,0.55)'} },
     // ── Texto + Imagem Escura: foto escurecida, texto branco grande em baixo ─
     texto_img_escura: { titleSize:84, subSize:37, titleColor:'#ffffff', subColor:'#cccccc', box:'#ffffff', boxOp:0, shadow:false, align:'left', justify:'flex-end', gap:16, font:'"Playfair Display", serif', padX:72, padTop:80, padBottom:130, bgType:'image', bgOverlay:'linear-gradient(to bottom,rgba(0,0,0,0.28) 0%,rgba(0,0,0,0.38) 42%,rgba(0,0,0,0.70) 78%,rgba(0,0,0,0.82) 100%)', textShadow:{x:0,y:1,blur:10,color:'rgba(0,0,0,0.5)'} },
+    // ── Tweet: capa foto + slides internos com fundo sólido e crédito do médico ──
+    tweet:      { titleSize:82, subSize:44, titleColor:'#ffffff', subColor:'#cccccc', box:'#ffffff', boxOp:0, shadow:false, align:'left', justify:'center',   gap:22, font:'"Inter","Arial",sans-serif', padX:72, padTop:80,  padBottom:80,  bgType:'solid', bgColor:'#04284e', textShadow:{x:0,y:2,blur:12,color:'rgba(0,0,0,0.55)'} },
+    tweet_capa: { titleSize:80, subSize:42, titleColor:'#ffffff', subColor:'#e0e0e0', box:'#ffffff', boxOp:0, shadow:false, align:'left', justify:'flex-end', gap:20, font:'"Inter","Arial",sans-serif', padX:72, padTop:80,  padBottom:130, bgType:'image', bgOverlay:'linear-gradient(to bottom,rgba(0,0,0,0.05) 0%,rgba(0,0,0,0.10) 38%,rgba(0,0,0,0.62) 75%,rgba(0,0,0,0.82) 100%)', textShadow:{x:0,y:2,blur:10,color:'rgba(0,0,0,0.65)'} },
+    // ── Tweet Érica: capa foto + slides internos alternando preto e branco, texto grande justificado
+    tweet_erica:      { titleSize:70, subSize:48, titleColor:'#ffffff', subColor:'#e0e0e0', box:'#ffffff', boxOp:0, shadow:false, align:'justify', justify:'center', gap:32, font:'"Inter","Arial",sans-serif', padX:88, padTop:110, padBottom:180, bgType:'solid', bgColor:'#000000',
+      altColors:[{bg:'#ffffff',title:'#1a1a1a',sub:'#444444'},{bg:'#000000',title:'#ffffff',sub:'#e0e0e0'}] },
+    tweet_erica_capa: { titleSize:80, subSize:42, titleColor:'#ffffff', subColor:'#e0e0e0', box:'#ffffff', boxOp:0, shadow:false, align:'left', justify:'flex-end', gap:20, font:'"Inter","Arial",sans-serif', padX:72, padTop:80,  padBottom:130, bgType:'image', bgOverlay:'linear-gradient(to bottom,rgba(0,0,0,0.05) 0%,rgba(0,0,0,0.10) 38%,rgba(0,0,0,0.62) 75%,rgba(0,0,0,0.82) 100%)', textShadow:{x:0,y:2,blur:10,color:'rgba(0,0,0,0.65)'} },
     // ── Tela Dividida com Blur: foto completa + frosted-glass no topo para texto
     tela_dividida:      { titleSize:76, subSize:44, titleColor:'#0d0d0d', subColor:'#2a2a2a', box:'#f4f4f4', boxOp:0, shadow:false, align:'center', justify:'flex-start', gap:20, font:'"Montserrat","Inter",sans-serif', padX:60, padTop:88,  padBottom:840, bgType:'blur-top', bgColor:'#f2f2f2', bgBlurRatio:0.38, bgBlurAmount:10, bgBlurOverlay:'rgba(250,250,250,0.52)' },
     tela_dividida_capa: { titleSize:72, subSize:44, titleColor:'#ffffff', subColor:'#c8ddf0', box:'#ffffff', boxOp:0, shadow:false, align:'left',   justify:'flex-start', gap:24, font:'"Montserrat","Inter",sans-serif', padX:64, padTop:108, padBottom:840, bgType:'blur-top', bgColor:'#0a2358', bgBlurRatio:0.38, bgBlurAmount:10, bgBlurOverlay:'rgba(10,35,88,0.72)', textShadow:{x:0,y:2,blur:8,color:'rgba(0,0,0,0.35)'} },
@@ -231,12 +238,21 @@
     if (fmt.bgType === 'blur-top') {
       const ratio    = fmt.bgBlurRatio  != null ? fmt.bgBlurRatio  : 0.38;
       const blurAmt  = fmt.bgBlurAmount != null ? fmt.bgBlurAmount : 10;
-      const overlay  = fmt.bgBlurOverlay || 'rgba(245,245,245,0.48)';
       const blurPct  = Math.round(ratio * 100);
       const exp      = Math.ceil(blurAmt * 2); // expand inner div to hide blur-edge fringe
       const innerH   = Math.round(1350 + exp * 4); // taller than slide so photo centers correctly
+      // carousel.bgColor overrides the built-in overlay color
+      let overlay, overlayFade;
+      if (carousel && carousel.bgColor) {
+        overlay     = hexToRgba(carousel.bgColor, 0.78);
+        overlayFade = hexToRgba(carousel.bgColor, 0);
+      } else {
+        overlay = fmt.bgBlurOverlay || 'rgba(245,245,245,0.70)';
+        const m = overlay.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+        overlayFade = m ? `rgba(${m[1]},${m[2]},${m[3]},0)` : 'transparent';
+      }
       if (!bg) {
-        return `<div style="position:absolute;inset:0;background:${fmt.bgColor || '#f4f4f4'};"></div>`;
+        return `<div style="position:absolute;inset:0;background:${(carousel && carousel.bgColor) || fmt.bgColor || '#f4f4f4'};"></div>`;
       }
       const url = filesAsUrl ? filesAsUrl(bg) : bg;
       const zoom = (slide && slide.bgZoom) || 1;
@@ -246,13 +262,13 @@
         ? `transform:scale(${zoom}) translate(${px2}%,${py2}%);transform-origin:center center;` : '';
       return (
         `<div style="position:absolute;inset:0;background:url('${url}') center/cover no-repeat;${transform2}"></div>` +
-        `<div style="position:absolute;top:0;left:0;right:0;height:${blurPct}%;overflow:hidden;">` +
+        `<div style="position:absolute;top:0;left:0;right:0;height:${blurPct + 22}%;overflow:hidden;">` +
           `<div style="position:absolute;top:-${exp}px;left:-${exp}px;right:-${exp}px;height:${innerH}px;background:url('${url}') center/cover no-repeat;${transform2}filter:blur(${blurAmt}px);"></div>` +
-          `<div style="position:absolute;inset:0;background:${overlay};"></div>` +
+          `<div style="position:absolute;inset:0;background:linear-gradient(to bottom,${overlay},${overlay} 55%,${overlayFade} 100%);"></div>` +
         `</div>`
       );
     }
-    if (bg) {
+    if (bg && fmt.bgType !== 'solid') {
       const url = filesAsUrl ? filesAsUrl(bg) : bg;
       const zoom = (slide && slide.bgZoom) || 1;
       const px = (slide && slide.bgX) || 0;
@@ -266,8 +282,17 @@
               <div style="position:absolute;inset:0;background:${overlay};"></div>`;
     }
     // Custom template with solid/gradient background
+    const slideBgOverride = slide && slide.fmt && slide.fmt.bgColor;
+    // Alternating colors (e.g. tweet_erica: black/white per slide index)
+    if (fmt.altColors && carousel && carousel.slides && !slideBgOverride) {
+      const idx = carousel.slides.indexOf(slide);
+      const alt = fmt.altColors[((idx >= 0 ? idx : 0)) % fmt.altColors.length];
+      return `<div style="position:absolute;inset:0;background:${alt.bg};"></div>`;
+    }
+    if (fmt.bgType === 'solid' || slideBgOverride || fmt.bgColor) {
+      return `<div style="position:absolute;inset:0;background:${slideBgOverride || fmt.bgColor || '#1a2040'};"></div>`;
+    }
     if (fmt.bgGradient) return `<div style="position:absolute;inset:0;background:${fmt.bgGradient};"></div>`;
-    if (fmt.bgColor)    return `<div style="position:absolute;inset:0;background:${fmt.bgColor};"></div>`;
     return `<div style="position:absolute;inset:0;background:#1a2040;"></div>`;
   }
 
@@ -302,12 +327,65 @@
         ? `<div style="position:absolute;inset:0;transform:translateY(${U(offY)});">${inner}</div>`
         : inner;
     }
-    return buildFlexBoxes(slide, carousel.style || 'medico', U);
+    const style = carousel.style || 'medico';
+    // Tweet Érica: inject alternating text colors + bottom credit
+    if (style === 'tweet_erica') {
+      const fmt = FMT.tweet_erica;
+      const idx = carousel.slides ? carousel.slides.indexOf(slide) : -1;
+      const alt = (fmt.altColors && idx >= 0)
+        ? fmt.altColors[idx % fmt.altColors.length]
+        : { title: fmt.titleColor, sub: fmt.subColor };
+      const modSlide = Object.assign({}, slide, {
+        fmt: Object.assign({}, slide.fmt, { titleColor: alt.title, subColor: alt.sub }),
+      });
+      const content = buildFlexBoxes(modSlide, style, U);
+      const credit = buildDoctorCreditBottom(carousel, alt.title, U);
+      return content + credit;
+    }
+    const content = buildFlexBoxes(slide, style, U);
+    if (style === 'tweet') {
+      const credit = buildDoctorCredit(carousel, U);
+      if (credit) {
+        const insertAt = content.indexOf('>') + 1;
+        return content.slice(0, insertAt) + credit + content.slice(insertAt);
+      }
+    }
+    return content;
+  }
+
+  // Doctor credit at absolute bottom center (tweet_erica style)
+  function buildDoctorCreditBottom(carousel, textColor, U) {
+    const handle = (carousel.tweetHandle || carousel.doctorName || '').trim();
+    const photo = carousel.photo || '';
+    if (!handle && !photo) return '';
+    const color = textColor || '#ffffff';
+    const avatarHtml = photo
+      ? `<div style="width:${U(56)};height:${U(56)};border-radius:50%;overflow:hidden;flex-shrink:0;background:url('${photo}') center/cover no-repeat;border:${U(2)} solid ${color === '#ffffff' ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.15)'};"></div>`
+      : '';
+    const verified = `<span style="display:inline-flex;align-items:center;justify-content:center;width:${U(26)};height:${U(26)};background:#3897f0;border-radius:50%;color:#fff;font-size:${U(14)};font-weight:700;flex-shrink:0;">✓</span>`;
+    const nameHtml = handle
+      ? `<span style="font-size:${U(30)};font-weight:600;color:${color};font-family:Inter,sans-serif;line-height:1.2;">${esc(handle)}</span>${verified}`
+      : '';
+    return `<div style="position:absolute;bottom:${U(80)};left:0;right:0;display:flex;align-items:center;justify-content:center;gap:${U(14)};">${avatarHtml}${nameHtml}</div>`;
+  }
+
+  // Doctor credit chip (avatar + name) for tweet inner slides — in-flow, above text boxes
+  function buildDoctorCredit(carousel, U) {
+    const name = (carousel.doctorName || '').trim();
+    const photo = carousel.photo || '';
+    if (!name && !photo) return '';
+    const avatarHtml = photo
+      ? `<div style="width:${U(64)};height:${U(64)};border-radius:50%;overflow:hidden;flex-shrink:0;background:url('${photo}') center/cover no-repeat;border:${U(2)} solid rgba(255,255,255,0.3);"></div>`
+      : '';
+    const nameHtml = name
+      ? `<span style="font-size:${U(34)};font-weight:700;color:#ffffff;font-family:Inter,sans-serif;line-height:1.2;">${esc(name)}</span>`
+      : '';
+    return `<div style="display:flex;align-items:center;gap:${U(18)};width:100%;">${avatarHtml}${nameHtml}</div>`;
   }
 
   const SharedRender = {
     SLIDE_W, SLIDE_H, FMT, getFmt, esc, hexToRgba, fit, sanitizeCopy,
-    deriveBlocks, normalizeBlocks, oneBox, buildFlexBoxes, renderAbsEl, bgLayer, buildInner,
+    deriveBlocks, normalizeBlocks, oneBox, buildFlexBoxes, renderAbsEl, bgLayer, buildInner, buildDoctorCredit, buildDoctorCreditBottom,
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = SharedRender;
