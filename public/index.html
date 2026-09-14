@@ -319,6 +319,18 @@
               <label class="side-label">Nome do médico</label>
               <input type="text" id="tweetDoctorInput" class="side-input" placeholder="Dr. João Silva" oninput="tweetDoctorNameChange(this.value)" style="width:100%;box-sizing:border-box;" />
             </div>
+            <div id="avatarRow" style="display:none">
+              <label class="side-label">Foto de perfil</label>
+              <div style="display:flex;gap:8px;align-items:center">
+                <div id="avatarPreview" style="width:34px;height:34px;border-radius:50%;flex-shrink:0;background:#2a2a35 center/cover no-repeat;border:1px solid rgba(255,255,255,.18)"></div>
+                <input type="file" id="fileAvatar" accept="image/*" style="display:none" onchange="avatarEscolhido(this)">
+                <button type="button" class="btn-secondary" style="flex:1"
+                        onclick="document.getElementById('fileAvatar').click()">Escolher…</button>
+                <button type="button" class="btn-secondary" title="Remover" onclick="avatarRemover()">✕</button>
+              </div>
+              <p class="hint" style="margin-top:4px">Aparece no crédito dos slides. Independente da imagem de fundo.</p>
+            </div>
+
             <div id="tweetHandleRow" style="display:none">
               <label class="side-label">Perfil (nome exibido)</label>
               <input type="text" id="tweetHandleInput" class="side-input" placeholder="@perfil.medico" oninput="tweetHandleChange(this.value)" style="width:100%;box-sizing:border-box;" />

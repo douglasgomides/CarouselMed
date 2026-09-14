@@ -356,7 +356,10 @@
   // Doctor credit at absolute bottom center (tweet_erica style)
   function buildDoctorCreditBottom(carousel, textColor, U) {
     const handle = (carousel.tweetHandle || carousel.doctorName || '').trim();
-    const photo = carousel.photo || '';
+    // avatarUrl é a foto de perfil, escolhida à parte. carousel.photo NÃO
+    // serve: ela é o fundo aplicado a todos os slides, então o crédito saía
+    // com a mesma imagem da capa — e sumia quando não havia fundo nenhum.
+    const photo = carousel.avatarUrl || '';
     if (!handle && !photo) return '';
     const color = textColor || '#ffffff';
     const avatarHtml = photo
@@ -372,7 +375,7 @@
   // Doctor credit chip (avatar + name) for tweet inner slides — in-flow, above text boxes
   function buildDoctorCredit(carousel, U) {
     const name = (carousel.doctorName || '').trim();
-    const photo = carousel.photo || '';
+    const photo = carousel.avatarUrl || '';
     if (!name && !photo) return '';
     const avatarHtml = photo
       ? `<div style="width:${U(64)};height:${U(64)};border-radius:50%;overflow:hidden;flex-shrink:0;background:url('${photo}') center/cover no-repeat;border:${U(2)} solid rgba(255,255,255,0.3);"></div>`

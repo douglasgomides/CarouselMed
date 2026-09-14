@@ -1213,6 +1213,18 @@ function syncSidePanel() {
     }
   }
 
+  // Foto de perfil: vale para os dois estilos de tweet
+  const avatarRow = document.getElementById('avatarRow');
+  if (avatarRow) {
+    const ehTweet = activeCarousel.style === 'tweet' || activeCarousel.style === 'tweet_erica';
+    avatarRow.style.display = ehTweet ? '' : 'none';
+    if (ehTweet) {
+      const prev = document.getElementById('avatarPreview');
+      if (prev) prev.style.backgroundImage = activeCarousel.avatarUrl
+        ? `url('${activeCarousel.avatarUrl}')` : 'none';
+    }
+  }
+
   // Doctor name field (tweet template) — auto-populate from folder name if empty
   const tweetDoctorRow = document.getElementById('tweetDoctorRow');
   if (tweetDoctorRow) {
@@ -2730,3 +2742,41 @@ function deleteSlide(i, event) {
   syncSidePanel();
   persistDrafts();
 }
+
+// ── Foto de perfil do crédito ────────────────────────────────────────
+// Campo próprio, separado de carousel.photo (que é o fundo aplicado aos
+// slides). Antes o crédito reaproveitava o fundo: saía com a mesma imagem
+// da capa, e sumia quando não havia fundo nenhum.
+async function avatarEscolhido(input) {
+  const arq = input.files && input.files[0];
+  if (!arq || !activeCarousel) return;
+  try {
+    const fd = new FormData();
+    fd.append('photos', arq);          // mesmo campo e mesma rota do resto do app
+    const r = await fetch('/api/upload-photo', { method: 'POST', body: fd });
+    if (!r.ok) throw new Error('servidor respondeu ' + r.status);
+    const d = await r.json();
+    const caminho = (d.paths && d.paths[0]) || d.path;
+    if (!caminho) throw new Error('servidor não devolveu o caminho');
+    activeCarousel.avatarUrl = caminho;
+    syncSidePanel();
+    renderSlidePreview();
+    renderThumbStrip(null, true);
+    persistDrafts();
+    showToast('✅ Foto de perfil aplicada');
+  } catch (e) {
+    showToast('❌ Não deu para enviar a foto');
+  } finally {
+    input.value = '';
+  }
+}
+
+function avatarRemover() {
+  if (!activeCarousel) return;
+  delete activeCarousel.avatarUrl;
+  syncSidePanel();
+  renderSlidePreview();
+  renderThumbStrip(null, true);
+  persistDrafts();
+}
+
