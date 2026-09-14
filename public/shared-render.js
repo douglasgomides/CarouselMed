@@ -305,6 +305,35 @@
       const style = carousel.style || 'medico';
       const base = FMT[style] || FMT.medico;
       const offY = (slide.fmt && slide.fmt.offsetY) || 0;
+
+      // Cor alternada (tweet_erica) também vale para caixa arrastada.
+      //
+      // Este ramo devolve cedo, antes do trecho que injeta altColors mais
+      // abaixo. O fundo alternava certo, porque bgLayer calcula por conta
+      // própria, e o texto ficava na cor padrão do estilo — branca. Em slide
+      // de fundo branco isso é texto invisível.
+      //
+      // Só trocamos a cor que o próprio sistema pôs. Toda cor que o estilo
+      // usa (a padrão e as das alternâncias) conta como automática; qualquer
+      // outra veio do seletor e é preservada.
+      const altEl = (base.altColors && carousel.slides)
+        ? base.altColors[Math.max(0, carousel.slides.indexOf(slide)) % base.altColors.length]
+        : null;
+      const automaticas = altEl
+        ? new Set(
+            [base.titleColor, base.subColor]
+              .concat(base.altColors.flatMap((a) => [a.title, a.sub]))
+              .filter(Boolean)
+              .map((c) => String(c).toLowerCase()),
+          )
+        : null;
+      const corAutomatica = (el) => {
+        if (!altEl) return null;
+        const atual = String(el.color || '').toLowerCase();
+        if (atual && !automaticas.has(atual)) return null;   // escolha manual, respeita
+        const desejada = el.bold ? altEl.title : altEl.sub;
+        return atual === String(desejada).toLowerCase() ? null : desejada;
+      };
       const gapAdj = (slide.fmt && slide.fmt.gap != null) ? (slide.fmt.gap - base.gap) : 0;
 
       // text elements sorted top→bottom get an increasing gap shift
@@ -319,6 +348,10 @@
             const oi = textOrder.indexOf(el);
             if (oi > 0) e = Object.assign({}, el, { y: el.y + gapAdj * oi });
           }
+        }
+        if (el.type === 'text') {
+          const cor = corAutomatica(el);
+          if (cor) e = Object.assign({}, e, { color: cor });
         }
         return renderAbsEl(e, U, idx);
       }).join('\n');
