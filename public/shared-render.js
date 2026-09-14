@@ -114,6 +114,34 @@
     const titleColor = o.titleColor || base.titleColor;
     const subColor   = o.subColor   || base.subtitleColor || base.subColor;
     const arr = deriveBlocks(slide);
+
+    // Em estilo de cor alternada (tweet_erica), a cor gravada no bloco não
+    // pode vencer a do slide.
+    //
+    // Cada bloco guarda um `color` desde que foi criado — cópia da cor padrão
+    // do estilo naquele momento, não uma escolha de ninguém. Como `bl.color`
+    // tinha prioridade absoluta, o branco herdado ficava e o altColors
+    // injetado em slide.fmt era ignorado: num slide de fundo branco, texto
+    // branco invisível. Nos de fundo preto o branco acertava por coincidência,
+    // e por isso o defeito só aparecia na metade dos slides.
+    //
+    // Continua valendo a cor que alguém escolheu de fato: só desprezamos o
+    // valor do bloco quando ele é uma das cores que o próprio estilo usa.
+    const alternado = base.altColors && (o.titleColor || o.subColor);
+    const herdadas = alternado
+      ? new Set(
+          [base.titleColor, base.subColor, base.subtitleColor]
+            .concat(base.altColors.flatMap((a) => [a.title, a.sub]))
+            .filter(Boolean)
+            .map((c) => String(c).toLowerCase()),
+        )
+      : null;
+    const corDoBloco = (bl, isTitle) => {
+      const doSlide = isTitle ? titleColor : subColor;
+      if (!bl.color) return doSlide;
+      if (alternado && herdadas.has(String(bl.color).toLowerCase())) return doSlide;
+      return bl.color;
+    };
     return arr.map((bl, i) => {
       // A lone box is always treated as a title (bigger + bold)
       const isTitle = arr.length === 1 ? true : (bl.kind ? bl.kind === 'title' : i === 0);
@@ -126,7 +154,7 @@
       return {
         text: bl.text,
         size,
-        color: bl.color || (isTitle ? titleColor : subColor),
+        color: corDoBloco(bl, isTitle),
         bold: bl.bold != null ? bl.bold : isTitle,
         align: bl.align || align,
         // per-block box styling (falls back to slide-level fmt)
