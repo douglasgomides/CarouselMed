@@ -8,6 +8,10 @@
  * Quem valida usuário e senha é POST /api/login (no Express), que devolve um
  * cookie assinado. Aqui só conferimos a assinatura desse cookie.
  *
+ * Quem pode entrar é decidido no /api/login (que consulta o Supabase); aqui
+ * só se confere a assinatura. A borda não fala com banco de propósito: isso
+ * custaria uma ida de rede em cada arquivo estático.
+ *
  * A leitura das contas e o cálculo da assinatura são cópia do lib/sessao.js —
  * a borda roda ESM com Web Crypto e não consegue exigir o módulo CommonJS.
  * Mexeu em um, mexa no outro.
@@ -73,8 +77,19 @@ async function sessaoValida(request, contas) {
   const p = bruto.split('.');
   if (p.length !== 3) return false;
   const [exp, quem, sig] = p;
-  // conta apagada do PANEL_USERS perde o acesso na hora
-  if (!contas.some((c) => c.usuario === quem)) return false;
+
+  // A lista de contas do ambiente NÃO é mais a lista de quem pode entrar:
+  // desde que as contas passaram para o Supabase, existe gente que só está
+  // no banco — o admin é o caso. Conferir aqui derrubava exatamente essas
+  // pessoas: o login assinava um cookie válido e a borda o recusava logo
+  // depois, devolvendo para a tela de login.
+  //
+  // Com SESSION_SECRET definida, a assinatura sozinha já prova que o cookie
+  // saiu do nosso /api/login — e é lá que se checa se a conta existe e está
+  // ativa. Sem SESSION_SECRET a chave ainda vem do PANEL_USERS, e aí a lista
+  // precisa conter o usuário para que a chave sequer seja a mesma.
+  if (!process.env.SESSION_SECRET && !contas.some((c) => c.usuario === quem)) return false;
+
   if (!Number(exp) || Number(exp) < Date.now()) return false;
   return igual(sig, await assinar(exp, quem, segredo(contas)));
 }
@@ -85,10 +100,11 @@ export default async function middleware(request) {
 
   const contas = lerUsuarios();
 
-  // Sem credenciais configuradas o app fecha, em vez de ficar aberto por engano.
-  if (!contas.length) {
+  // Sem NENHUMA forma de autenticar, o app fecha em vez de ficar aberto por
+  // engano. SESSION_SECRET basta: com ela as contas podem viver só no banco.
+  if (!contas.length && !process.env.SESSION_SECRET) {
     return new Response(
-      'CarouselMed trancado: defina PANEL_USERS ("usuario:senha,outro:senha") nas variáveis de ambiente.',
+      'CarouselMed trancado: defina SESSION_SECRET (contas no Supabase) ou PANEL_USERS ("usuario:senha").',
       { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } }
     );
   }
