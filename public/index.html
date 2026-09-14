@@ -72,6 +72,14 @@
             <div class="style-preview" style="background:linear-gradient(to bottom,#f4f4f4 44%,#9abedc 44%)"></div>
             <span>Tela Dividida</span>
           </label>
+          <label class="style-option" data-style="tweet" onclick="setStyle('tweet')">
+            <div class="style-preview" style="background:#04284e"></div>
+            <span>Tweet</span>
+          </label>
+          <label class="style-option" data-style="tweet_erica" onclick="setStyle('tweet_erica')">
+            <div class="style-preview" style="background:linear-gradient(to right,#000000 50%,#ffffff 50%)"></div>
+            <span>Tweet Érica</span>
+          </label>
         </div>
         <div id="customTemplateCards" class="style-grid" style="margin-top:6px;display:none;"></div>
         <input type="file" id="fileNovoTemplate" accept="image/*" multiple style="display:none"
@@ -306,6 +314,20 @@
               <button class="preset-chip" title="Sem caixa (texto puro)" onclick="sidePreset('none')">
                 <span class="chip-swatch" style="background:transparent;color:#888;border:1px dashed #666">Aa</span>Sem
               </button>
+            </div>
+            <div id="tweetDoctorRow" style="display:none">
+              <label class="side-label">Nome do médico</label>
+              <input type="text" id="tweetDoctorInput" class="side-input" placeholder="Dr. João Silva" oninput="tweetDoctorNameChange(this.value)" style="width:100%;box-sizing:border-box;" />
+            </div>
+            <div id="tweetHandleRow" style="display:none">
+              <label class="side-label">Perfil (nome exibido)</label>
+              <input type="text" id="tweetHandleInput" class="side-input" placeholder="@perfil.medico" oninput="tweetHandleChange(this.value)" style="width:100%;box-sizing:border-box;" />
+            </div>
+            <div class="color-row" id="bgColorRow" style="display:none">
+              <div class="color-field">
+                <input type="color" id="sideBgColor" value="#04284e" onchange="sideBgColorChange(this.value)" />
+                <span>Fundo</span>
+              </div>
             </div>
             <div class="color-row">
               <div class="color-field">
