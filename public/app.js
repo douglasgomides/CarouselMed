@@ -886,6 +886,8 @@ const ALL_PRESET_STYLES = [
   { id:'tweet_com_imagem',  name:'Tweet c/ Imagem' },
   { id:'texto_img_escura',  name:'Texto + Img Escura' },
   { id:'tela_dividida',     name:'Tela Dividida' },
+  { id:'tweet',             name:'Tweet' },
+  { id:'tweet_erica',       name:'Tweet Érica' },
 ];
 
 function renderModalStylePicker() {
