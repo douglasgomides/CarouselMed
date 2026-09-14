@@ -28,20 +28,15 @@ app.use(express.json({ limit: '20mb' }));
 // ── Login ───────────────────────────────────────────────────────────
 // A tela é /login (public/login.html); o middleware da borda barra o resto
 // até existir um cookie de sessão válido.
-app.post('/api/login', (req, res) => {
-  const contas = sessao.lerUsuarios();
-  if (!contas.length) {
-    return res.status(503).json({ error: 'Login não configurado no servidor.' });
-  }
+app.post('/api/login', async (req, res) => {
   const { username, password } = req.body || {};
-  const conta = contas.find(
-    (c) => sessao.igual(String(username ?? ''), c.usuario) &&
-           sessao.igual(String(password ?? ''), c.senha)
-  );
+  // autenticar() consulta o Supabase e cai no PANEL_USERS se o banco não
+  // responder — uma falha lá não pode trancar a equipe do lado de fora.
+  const conta = await sessao.autenticar(username, password);
   if (!conta) {
     return res.status(401).json({ error: 'Usuário ou senha incorretos.' });
   }
-  res.setHeader('Set-Cookie', sessao.criarCookie(conta.usuario, sessao.segredo(contas)));
+  res.setHeader('Set-Cookie', sessao.criarCookie(conta.usuario, sessao.segredo()));
   res.json({ ok: true, usuario: conta.usuario });
 });
 
